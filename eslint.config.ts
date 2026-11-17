@@ -8,6 +8,15 @@ type Config = Parameters<typeof defineConfig>[number];
 
 const MAX_DEPTH = 3;
 
+const SOURCE_FILES = "src/**/*.ts";
+
+const TEST_FILES = "tests/**/*.ts";
+
+const RELATIVE_IMPORTS = {
+  regex: String.raw`^\.\.?/`,
+  message: 'Import with the "#/" alias, e.g. "#/src/module.ts".',
+};
+
 const recommendedConfigs: Config[] = [
   globalIgnores(
     ["node_modules/", "dist/", "build/", "coverage/"],
@@ -66,6 +75,13 @@ const recommendedConfigs: Config[] = [
     rules: {
       "import-x/no-cycle": "error",
       "import-x/no-self-import": "error",
+    },
+  },
+  {
+    name: "absolute-imports",
+    files: [SOURCE_FILES, TEST_FILES],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [RELATIVE_IMPORTS] }],
     },
   },
 ];
