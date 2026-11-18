@@ -10,6 +10,10 @@ See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding sta
 
 A Game Boy style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
 
+### Sound
+
+All sounds are short blips synthesized with the Web Audio API; there are no audio files and no music. The audio context unlocks on the first touch or key press. Tap with two fingers or press `M` to mute and unmute.
+
 ### Build
 
 `npm run build` bundles `src/main.ts` with `esbuild` and writes `dist/index.html` and `dist/game.js`.

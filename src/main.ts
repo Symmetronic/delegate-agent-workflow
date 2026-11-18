@@ -1,3 +1,4 @@
+import { createAudio } from "#/src/audio.ts";
 import { ATTACK_CELLS, attackAt } from "#/src/battle-layout.ts";
 import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
@@ -94,6 +95,7 @@ const WINDOW_HEIGHT = 44;
 const MORE_MARKER_SIZE = 3;
 const BUBBLE_BOB_MILLISECONDS = 350;
 const BUBBLE_HEIGHT = 8;
+const TWO_FINGERS = 2;
 const TAP_RADIUS = 16;
 const TALK_DISTANCE = 20;
 const PLAYER_CENTER_OFFSET = TILE_SIZE / (1 + 1);
@@ -114,6 +116,9 @@ const LOG_POSITIONS = LOG_TILES.map((tile) => ({
   y: tile.row * TILE_SIZE,
 }));
 
+const audio = createAudio(() =>
+  typeof AudioContext === "undefined" ? null : new AudioContext(),
+);
 const story = createStory();
 const walkInput = createWalkInput();
 const encounterTrigger = createEncounterTrigger(Math.random);
@@ -143,6 +148,7 @@ function startBattleOnEncounter(): void {
   lastTile = key;
   if (encounterTrigger.stepOnto(currentTileKind())) {
     battle = createBattle(Math.random, playerHp ?? undefined);
+    audio.play("encounter");
   }
 }
 
@@ -335,11 +341,15 @@ function tick(timestamp: number): void {
       : Math.min(timestamp - previousTimestamp, MAX_FRAME_MILLISECONDS);
   previousTimestamp = timestamp;
   if (battle === null) {
+    const stepBefore = Math.floor(player.walked / PIXELS_PER_WALK_FRAME);
     player = walk(
       player,
       story.isOpen() ? null : walkInput.direction(),
       elapsed,
     );
+    if (Math.floor(player.walked / PIXELS_PER_WALK_FRAME) !== stepBefore) {
+      audio.play("footstep");
+    }
     startBattleOnEncounter();
   }
   if (battle === null) {
@@ -356,6 +366,7 @@ function touchPoint(event: TouchEvent): Point | null {
   return touch === undefined ? null : { x: touch.clientX, y: touch.clientY };
 }
 
+let muteGestureActive = false;
 let lastTouchStart: Point = { x: 0, y: 0 };
 
 function cameraOrigin(): Point {
@@ -407,6 +418,23 @@ function interact(isTarget: (target: Point) => boolean): void {
   }
 }
 
+function chooseWithSound(active: Battle, choose: () => void): void {
+  const wasChoosing = active.phase() === "choosing";
+  const before = { machine: active.machineHp(), player: active.playerHp() };
+  choose();
+  if (!wasChoosing || active.phase() !== "message") {
+    return;
+  }
+  if (active.selfDestructed()) {
+    audio.play("self-destruct");
+  } else if (
+    active.machineHp() < before.machine ||
+    active.playerHp() < before.player
+  ) {
+    audio.play("hit");
+  }
+}
+
 function handleBattleTap(active: Battle, point: Point): void {
   if (active.phase() === "message") {
     active.advance();
@@ -415,7 +443,10 @@ function handleBattleTap(active: Battle, point: Point): void {
   const logical = toLogical(point);
   const index = logical === null ? null : attackAt(logical);
   if (index !== null) {
-    active.choose(index);
+    audio.play("select");
+    chooseWithSound(active, () => {
+      active.choose(index);
+    });
   }
 }
 
@@ -431,6 +462,12 @@ function handleTap(point: Point): void {
 }
 
 document.addEventListener("touchstart", (event) => {
+  audio.unlock();
+  if (event.touches.length === TWO_FINGERS) {
+    audio.toggleMute();
+    muteGestureActive = true;
+    return;
+  }
   const point = touchPoint(event);
   if (point !== null && event.touches.length === 1) {
     lastTouchStart = point;
@@ -445,7 +482,9 @@ document.addEventListener("touchmove", (event) => {
 });
 function releaseTouch(event: TouchEvent): void {
   if (event.touches.length === 0) {
-    if (walkInput.touchEnd() === "tap") {
+    const wasMuteGesture = muteGestureActive;
+    muteGestureActive = false;
+    if (walkInput.touchEnd() === "tap" && !wasMuteGesture) {
       handleTap(lastTouchStart);
     }
   }
@@ -455,17 +494,28 @@ document.addEventListener("touchcancel", releaseTouch);
 function handleBattleKey(active: Battle, key: string): void {
   const direction = BATTLE_DIRECTION_BY_KEY[key];
   if (direction !== undefined) {
+    const previous = active.selected();
     active.moveSelection(direction);
+    if (active.selected() !== previous) {
+      audio.play("select");
+    }
   } else if (key === "Enter") {
     if (active.phase() === "message") {
       active.advance();
     } else {
-      active.confirm();
+      chooseWithSound(active, () => {
+        active.confirm();
+      });
     }
   }
 }
 
 document.addEventListener("keydown", (event) => {
+  audio.unlock();
+  if (event.key.toLowerCase() === "m" && !event.repeat) {
+    audio.toggleMute();
+    return;
+  }
   if (battle !== null) {
     if (!event.repeat) {
       handleBattleKey(battle, event.key);

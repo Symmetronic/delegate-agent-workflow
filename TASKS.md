@@ -75,7 +75,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - Each machine type attacks with its own line, so a battle reads differently per opponent
 - Attack effects, the HP-dependent self-destruct chance and the machine draw are asserted through injectable randomness
 
-## [ ] 8. Hear the machines
+## [x] 8. Hear the machines
 
 **Blocked by:** 7
 

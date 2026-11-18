@@ -9,6 +9,7 @@ export type BattleOutcome = "won" | "lost";
 export interface Battle {
   phase(): BattlePhase;
   outcome(): BattleOutcome | null;
+  selfDestructed(): boolean;
   machineKind(): MachineKind;
   machineName(): string;
   machineHp(): number;
@@ -116,6 +117,7 @@ export function createBattle(
   let machineHp = machine.maxHp;
   let selected = 0;
   let outcome: BattleOutcome | null = null;
+  let selfDestructed = false;
   let pages: readonly TextPage[] = paginate(`A ${machine.name} appears!`);
   let pageIndex = 0;
   let phase: BattlePhase = "message";
@@ -140,6 +142,7 @@ export function createBattle(
       random() < selfDestructChance(attackIndex, machineHp, machine.maxHp)
     ) {
       machineHp = 0;
+      selfDestructed = true;
       outcome = "won";
       texts.push(...machine.selfDestruct, machine.conversion);
     } else if (!attack.stunsMachine) {
@@ -160,6 +163,7 @@ export function createBattle(
   return {
     phase: () => phase,
     outcome: () => outcome,
+    selfDestructed: () => selfDestructed,
     machineKind: () => machine.kind,
     machineName: () => machine.name,
     machineHp: () => machineHp,
