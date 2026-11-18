@@ -6,6 +6,38 @@ An agent workflow for delegating multiple tasks to agents in parallel and superv
 
 See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding standards that apply to this repository.
 
+## Artificial Unintelligence
+
+A Game Boy Color style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
+
+### What it is
+
+A prototype to find out how well a Game Boy style game plays on a phone. The machines have taken over but are stuck in a meaning crisis, and the only human weapon left is the uncomfortable question.
+
+### How it is played
+
+Drag anywhere on the screen to walk tile by tile; arrow keys or WASD work too. Stand next to someone or something and tap it (or press Enter) to talk or read. The last sysadmin sends you to read the five terminals scattered across the wasteland of crashed rockets and glowing pools; come back to him and he trades the weakest attack for the ultimate one, "Show it a picture of a cat". It is the only thing that beats the Mainframe of Doubt, which blocks the gap in the wreckage wall to the north. Behind it lies a flooded data center, only sketched so far. A three-eyed crow, a glowing rat and a survivor wander around and have something to say. Walking in the cable grass triggers fights against three machine types; pick one of four attacks in the two-by-two grid. Winning converts the machine into something friendly, losing is a coffee break.
+
+### What is deliberately not in it
+
+No saving, no leveling, no items, no i18n (English only) and no on-screen controls. The only asset files are the two music tracks.
+
+### Sound
+
+All sound effects are short blips synthesized with the Web Audio API. Two music tracks made with Suno v6, credited in the intro, in `src/assets/music/` loop endlessly underneath, quiet enough to keep the sound effects distinct: `background.m4a` while exploring and `fight.m4a` during fights, which starts from the top for every fight while the background track picks up where it left off. The audio unlocks on the first touch or key press. Tap with two fingers or press `M` to mute and unmute sound effects and music.
+
+### Build
+
+`npm run build` bundles `src/main.ts` with `esbuild` and writes `dist/index.html` and `dist/game.js`, and copies `src/assets/` to `dist/assets/`.
+
+### Develop
+
+Run `npm run build`, then serve `dist/` with any static file server, e.g. `npx esbuild --servedir=dist --serve=8000`, and open `http://localhost:8000`. Rebuild after each change.
+
+### Deploy
+
+Deploy the contents of `dist/`: `index.html`, `game.js` and the `assets/` folder.
+
 ## Delegate runs
 
 `/delegate <idea>` in Claude Code turns an idea into a pull request:
