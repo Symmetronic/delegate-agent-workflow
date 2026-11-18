@@ -145,10 +145,22 @@ unticked_task_numbers() {
   sed -n 's/^## \[ \] \([0-9][0-9]*\)\..*/\1/p' "$TASKS_FILE_IN_REPOSITORY"
 }
 
-require_task_ticked() {
+tasks_file_at() {
+  git show "$1:$TASKS_FILE_IN_REPOSITORY"
+}
+
+require_only_task_ticked_since() {
   task_number="$1"
-  grep -Eq "^## \[x\] $task_number\." "$TASKS_FILE_IN_REPOSITORY" \
-    || fail "task $task_number is not ticked in $TASKS_FILE_IN_REPOSITORY"
+  base_commit="$2"
+  expected_tasks_file="$(tasks_file_at "$base_commit" | sed "s/^## \[ \] $task_number\./## [x] $task_number./")"
+  [ "$(tasks_file_at HEAD)" = "$expected_tasks_file" ] \
+    || fail "the session must tick task $task_number in $TASKS_FILE_IN_REPOSITORY and change nothing else in it"
+}
+
+require_tasks_file_unchanged_since() {
+  base_commit="$1"
+  git diff --quiet "$base_commit" HEAD -- "$TASKS_FILE_IN_REPOSITORY" \
+    || fail "the session changed $TASKS_FILE_IN_REPOSITORY"
 }
 
 implement_task() {
@@ -161,11 +173,11 @@ implement_task() {
 3. Tick task $task_number's heading checkbox in $TASKS_FILE_IN_REPOSITORY (\`## [ ] $task_number.\` becomes \`## [x] $task_number.\`).
 4. Commit everything as exactly one Conventional Commit with a capitalized summary.
 
-Never push. Never change other tasks in $TASKS_FILE_IN_REPOSITORY. Finish with a clean working tree."
+Never push. Change nothing else in $TASKS_FILE_IN_REPOSITORY. Finish with a clean working tree."
   push_branch
   require_clean_working_tree
   require_one_commit_since "$base_commit"
-  require_task_ticked "$task_number"
+  require_only_task_ticked_since "$task_number" "$base_commit"
   verify_every_commit_since "$base_commit"
 }
 
@@ -188,6 +200,7 @@ $TASKS_FILE_IN_REPOSITORY describes what the changes must achieve. Check that ev
 Fix every problem you find directly. Commit each improvement as one focused Conventional Commit with a capitalized summary, and make sure \`npm run verify\` passes after each commit. Do not change $TASKS_FILE_IN_REPOSITORY. Never push. Finish with a clean working tree."
   push_branch
   require_clean_working_tree
+  require_tasks_file_unchanged_since "$base_commit"
   verify_every_commit_since "$base_commit"
 }
 
