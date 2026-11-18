@@ -4,7 +4,8 @@ readonly PROJECT_DIRECTORY="${CLAUDE_PROJECT_DIR:-.}"
 readonly EXIT_CODE_THAT_ALLOWS_STOPPING=0
 readonly EXIT_CODE_THAT_BLOCKS_STOPPING=2
 
-readonly HOOK_INPUT="$(cat)"
+HOOK_INPUT="$(cat)"
+readonly HOOK_INPUT
 
 working_tree_has_changes() {
   [ -n "$(git status --porcelain)" ]
