@@ -34,7 +34,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - A touch that never passes the drag threshold is not movement but a tap, available to other features as an interaction
 - Movement and collision resolve in a module testable without a browser, with the same result for touch and keyboard input
 
-## [ ] 4. Learn what is going on
+## [x] 4. Learn what is going on
 
 **Blocked by:** 3
 

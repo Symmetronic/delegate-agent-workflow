@@ -2,6 +2,7 @@ import {
   isCableGrass,
   isWalkable,
   PLAYER_START,
+  SYSADMIN_TILE,
   TILE_SIZE,
   tileAt,
   WORLD_COLUMNS,
@@ -17,6 +18,7 @@ const TILE_PIXELS = 8;
 const GRASS_TILE = { column: 5, row: 5 };
 const MAT_TILE = { column: 22, row: 17 };
 const OUTSIDE = 5;
+const NEAR_START_TILES = 4;
 
 function allKinds(): Set<string> {
   const kinds = new Set<string>();
@@ -61,5 +63,13 @@ describe("world", () => {
     assert.ok(isCableGrass(tileAt(GRASS_TILE.column, GRASS_TILE.row)));
     assert.ok(isWalkable(tileAt(GRASS_TILE.column, GRASS_TILE.row)));
     assert.ok(!isCableGrass(tileAt(MAT_TILE.column, MAT_TILE.row)));
+  });
+
+  it("places the sysadmin on his floor mat next to the start", () => {
+    assert.equal(tileAt(SYSADMIN_TILE.column, SYSADMIN_TILE.row), "floor-mat");
+    assert.ok(
+      Math.abs(SYSADMIN_TILE.column - PLAYER_START.column) <= NEAR_START_TILES,
+    );
+    assert.equal(SYSADMIN_TILE.row, PLAYER_START.row);
   });
 });

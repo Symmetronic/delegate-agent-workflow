@@ -69,6 +69,8 @@ export const WORLD_ROWS = ROWS.length;
 
 export const PLAYER_START: TilePosition = { column: 19, row: 17 };
 
+export const SYSADMIN_TILE: TilePosition = { column: 23, row: 17 };
+
 export function tileAt(column: number, row: number): TileKind {
   return ROWS[row]?.[column] ?? "obstacle";
 }

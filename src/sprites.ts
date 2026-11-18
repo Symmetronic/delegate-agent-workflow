@@ -119,3 +119,25 @@ export function bakeSprite(rows: SpriteRows): HTMLCanvasElement {
   });
   return canvas;
 }
+
+export const SYSADMIN_SPRITE: SpriteRows = [
+  "..3333..",
+  ".333333.",
+  ".310013.",
+  ".333333.",
+  "..2222..",
+  ".222222.",
+  "2.2222.2",
+  "..3..3..",
+];
+
+export const BUBBLE_SPRITE: SpriteRows = [
+  "3333333",
+  "3000003",
+  "3003003",
+  "3003003",
+  "3000003",
+  "3003003",
+  "3333333",
+  "..3....",
+];
