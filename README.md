@@ -20,11 +20,10 @@ Every commit is checked with `npm run verify` and the branch is pushed after eve
 
 ### Setup
 
-1. Rebuild the Dev Container once, so it has Docker-in-Docker and the GitHub CLI.
-2. Create a Claude token with `claude setup-token`.
-3. Create a [fine-grained GitHub personal access token](https://github.com/settings/personal-access-tokens/new) for this repository only, with read and write access to **Contents** and **Pull requests**.
-4. Copy `.env.example` to `.env` in the repository root and fill in both tokens. Use plain `KEY=value` lines without quotes.
-5. Make sure `git config user.name` and `git config user.email` are set: delegate runs commit as you.
+1. Create a Claude token with `claude setup-token`.
+2. Create a [fine-grained GitHub personal access token](https://github.com/settings/personal-access-tokens/new) for this repository only, with read and write access to **Contents** and **Pull requests**.
+3. Copy `.env.example` to `.env` in the repository root and fill in both tokens. Use plain `KEY=value` lines without quotes.
+4. Make sure `git config user.name` and `git config user.email` are set: delegate runs commit as you.
 
 ### Secrets
 
