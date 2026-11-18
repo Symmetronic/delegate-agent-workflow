@@ -80,7 +80,7 @@ export const ATTACKS: readonly Attack[] = [
 ];
 
 export const ULTIMATE_ATTACK: Attack = {
-  name: "Show cat picture",
+  name: "Show it a picture of a cat",
   message: "You show it a picture of a cat. It stares. Its fans stop.",
   minDamage: 99,
   maxDamage: 99,

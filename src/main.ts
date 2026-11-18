@@ -1,5 +1,5 @@
 import { createAudio } from "#/src/audio.ts";
-import { ATTACK_CELLS, attackAt } from "#/src/battle-layout.ts";
+import { ATTACK_CELLS, attackAt, attackLabel } from "#/src/battle-layout.ts";
 import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
@@ -86,7 +86,6 @@ const PLAYER_LABEL = { x: 90, y: 54 };
 const PLAYER_BAR = { x: 90, y: 64 };
 const PLAYER_HP_TEXT = { x: 90, y: 72 };
 const CELL_BORDER = 1;
-const CELL_TEXT_OFFSET = { x: 6, y: 9 };
 const BAR_WIDTH = 50;
 const BAR_HEIGHT = 5;
 const WINDOW_MARGIN = 4;
@@ -329,11 +328,10 @@ function drawBattle(active: Battle): void {
       cell.width - CELL_BORDER * (1 + 1),
       cell.height - CELL_BORDER * (1 + 1),
     );
-    drawText(
-      names[index] ?? "",
-      cell.x + CELL_TEXT_OFFSET.x,
-      cell.y + CELL_TEXT_OFFSET.y,
-    );
+    const label = attackLabel(cell, names[index] ?? "");
+    label.lines.forEach((line, lineIndex) => {
+      drawText(line, label.x, label.y + lineIndex * LINE_HEIGHT);
+    });
   });
 }
 

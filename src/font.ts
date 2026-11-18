@@ -1,6 +1,7 @@
 import type { SpriteRows } from "#/src/sprites.ts";
 
 export const GLYPH_WIDTH = 3;
+export const GLYPH_HEIGHT = 5;
 export const GLYPH_ADVANCE = 4;
 export const LINE_HEIGHT = 7;
 

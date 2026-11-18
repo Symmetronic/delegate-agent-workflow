@@ -1,13 +1,15 @@
-import { ATTACK_CELLS, attackAt } from "#/src/battle-layout.ts";
+import { ATTACK_CELLS, attackAt, attackLabel } from "#/src/battle-layout.ts";
 import {
   ATTACKS,
   attacksFor,
   createBattle,
   PLAYER_MAX_HP,
   selfDestructChance,
+  ULTIMATE_ATTACK,
   type Battle,
 } from "#/src/battle.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
+import { GLYPH_ADVANCE, LINE_HEIGHT } from "#/src/font.ts";
 import { MACHINES } from "#/src/machines.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -312,6 +314,23 @@ describe("battle layout", () => {
     assert.equal(attackAt({ x: 0, y: 0 }), null);
   });
 
+  it("fits every full attack name inside its cell", () => {
+    const cell = ATTACK_CELLS[0];
+    assert.ok(cell !== undefined);
+    for (const { name } of [...ATTACKS, ULTIMATE_ATTACK]) {
+      const label = attackLabel(cell, name);
+
+      assert.equal(label.lines.join(" "), name);
+      assert.ok(label.x > cell.x && label.y > cell.y);
+      for (const line of label.lines) {
+        assert.ok(label.x + line.length * GLYPH_ADVANCE <= cell.x + cell.width);
+      }
+      assert.ok(
+        label.y + label.lines.length * LINE_HEIGHT <= cell.y + cell.height,
+      );
+    }
+  });
+
   it("swaps the weakest attack for the cat picture and keeps four entries", () => {
     const before = attacksFor(false).map((attack) => attack.name);
     const after = createBattle(() => 0, PLAYER_MAX_HP, true).attackNames();
@@ -319,7 +338,7 @@ describe("battle layout", () => {
     assert.equal(before.length, ATTACK_COUNT);
     assert.equal(after.length, ATTACK_COUNT);
     assert.ok(!after.includes("Compliment"));
-    assert.equal(after[COMPLIMENT], "Show cat picture");
+    assert.equal(after[COMPLIMENT], "Show it a picture of a cat");
     assert.deepEqual(after.slice(0, COMPLIMENT), before.slice(0, COMPLIMENT));
   });
 
