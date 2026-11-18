@@ -64,9 +64,11 @@ move_env_file_into_workspace() {
 }
 
 git_with_github_token() {
+  # Hooks are off because they would run code under work with GH_TOKEN in their environment.
   # https://git-scm.com/docs/gitcredentials#_custom_helpers
   # shellcheck disable=SC2016 # $1 and $GH_TOKEN must expand inside the helper, not here.
   GH_TOKEN="$github_token" git \
+    -c core.hooksPath=/dev/null \
     -c credential.helper= \
     -c 'credential.helper=!f() { test "$1" = get && printf "username=x-access-token\npassword=%s\n" "$GH_TOKEN"; }; f' \
     "$@"
