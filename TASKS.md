@@ -18,7 +18,7 @@ Run OpenHands Agent Canvas inside the Dev Container so agents can be driven from
 - The delegate pipeline (which only runs post-create) is unaffected and does not start Canvas
 - `npm run verify` passes
 
-## [ ] 2. Document Agent Canvas in the README
+## [x] 2. Document Agent Canvas in the README
 
 **Blocked by:** 1
 

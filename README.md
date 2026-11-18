@@ -30,3 +30,38 @@ Every commit is checked with `npm run verify` and the branch is pushed after eve
 Your `.env` is copied into the container's workspace, as in the Dev Container, so the code under work sees the same environment, guarded by the same rules that keep Claude from reading it. The two delegate tokens are removed from that copy.
 
 The GitHub token is only used by the pipeline script that runs in the container to clone, push and create the pull request; Claude sessions never receive it. The Claude token is visible to the commands, hooks and MCP servers Claude runs in the container. It can't be hidden from them: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` needs unprivileged user namespaces, which Docker blocks by default, and it forces the permission mode back to default. Even with the scrub, the `claude` process itself holds the token, readable from `/proc/<pid>/environ`. Revoke it if you suspect a leak.
+
+## OpenHands Agent Canvas
+
+[OpenHands Agent Canvas](https://github.com/OpenHands/agent-canvas) runs inside the Dev Container so you can drive agents from your phone on the local network, using Claude Code with your Claude subscription (no API key needed). Canvas starts automatically on container start and attach, on port 8100, kept alive by a supervisor that restarts it whenever it exits. The first launch takes about a minute to become ready.
+
+### Setup
+
+1. Rebuild the Dev Container.
+2. Check the Claude Code login with `claude auth status`. If you are not logged in, run `claude auth login` and choose the Claude.ai subscription.
+3. In Canvas, set Settings → Agent → Preset to Claude Code.
+4. Make port 8100 reachable from your phone:
+   - On Windows, allow inbound TCP 8100, for example in an elevated PowerShell:
+
+     ```powershell
+     New-NetFirewallRule -DisplayName "OpenHands Agent Canvas" -Direction Inbound -Protocol TCP -LocalPort 8100 -Action Allow
+     ```
+
+   - For Docker Engine inside WSL2, set `networkingMode=mirrored` under `[wsl2]` in `%UserProfile%\.wslconfig`, then run `wsl --shutdown`.
+5. On the phone, open `http://<laptop-LAN-IP>:8100/canvas` and paste the key from `~/.openhands/canvas-api-key`.
+
+### Files and persistence
+
+- The API key is in `~/.openhands/canvas-api-key`.
+- The log is in `~/.openhands/agent-canvas.log`.
+- `~/.claude` and `~/.openhands` persist on Docker volumes, so the Claude login and the Canvas settings and key survive rebuilds.
+
+### Security
+
+- Canvas is served over plain HTTP, so use it on trusted networks only. For remote access, use [Tailscale](https://tailscale.com).
+- Anyone with the key can run commands in the container, on the real `/workspace`.
+- The laptop must stay awake with the container running.
+
+### Restarting Canvas
+
+Kill the `agent-canvas` process, for example with `pkill -f agent-canvas`. The supervisor brings it back.
