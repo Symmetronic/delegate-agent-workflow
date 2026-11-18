@@ -24,7 +24,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - The camera clamps at the world edges instead of showing emptiness beyond them
 - The world is data, so the map, its walkable tiles and its zones can be read and asserted without a browser
 
-## [ ] 3. Walk with a finger
+## [x] 3. Walk with a finger
 
 **Blocked by:** 2
 
