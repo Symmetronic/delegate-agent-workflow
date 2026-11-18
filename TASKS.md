@@ -2,7 +2,7 @@
 
 Run OpenHands Agent Canvas inside the Dev Container so agents can be driven from a phone on the local network, using Claude Code with the user's Claude subscription (the login already lives on the existing `~/.claude` volume, so no API key is needed). Take inspiration from the OpenHands changes on https://github.com/Symmetronic/nodejs-template/tree/openhands-agent-canvas (commits "chore: Setup OpenHands Agent Canvas" and "chore: Improve setup"), but adopt only the OpenHands parts: not its Stop hook, lint-staged, husky, tsconfig, `@tsconfig/node24` or `apt-get upgrade` changes. Follow this repository's existing conventions (pinned tool versions via Dockerfile `ARG`s, telemetry opt-outs as Dockerfile `ENV`, the `USERNAME` variable, feature docs as root README sections). Delegate runs build the same image; they will install but never start Canvas, which is accepted (no separate image target).
 
-## [ ] 1. Agent Canvas runs automatically in the Dev Container
+## [x] 1. Agent Canvas runs automatically in the Dev Container
 
 **Blocked by:** None
 
