@@ -71,8 +71,9 @@ require_secret() {
 }
 
 require_git_identity() {
-  git config user.name >/dev/null && git config user.email >/dev/null \
-    || fail "git user.name and user.email must be set"
+  if ! git config user.name >/dev/null || ! git config user.email >/dev/null; then
+    fail "git user.name and user.email must be set"
+  fi
 }
 
 require_no_container_for_branch() {
@@ -146,7 +147,7 @@ main() {
   (run_delegate) >"$LOG_FILE" 2>&1
   exit_status=$?
   report_outcome
-  exit "$exit_status"
+  return "$exit_status"
 }
 
 main
