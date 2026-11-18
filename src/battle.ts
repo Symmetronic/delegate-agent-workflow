@@ -1,3 +1,4 @@
+import { MACHINES, type Machine, type MachineKind } from "#/src/machines.ts";
 import type { Random } from "#/src/random.ts";
 import { paginate, type TextPage } from "#/src/text-window.ts";
 import type { Direction } from "#/src/walk-input.ts";
@@ -8,6 +9,7 @@ export type BattleOutcome = "won" | "lost";
 export interface Battle {
   phase(): BattlePhase;
   outcome(): BattleOutcome | null;
+  machineKind(): MachineKind;
   machineName(): string;
   machineHp(): number;
   machineMaxHp(): number;
@@ -28,13 +30,12 @@ interface Attack {
   readonly message: string;
   readonly minDamage: number;
   readonly maxDamage: number;
+  readonly maxSelfDestructChance: number;
+  readonly healsPlayer: number;
+  readonly stunsMachine: boolean;
 }
 
 export const PLAYER_MAX_HP = 16;
-export const MACHINE_MAX_HP = 24;
-const MACHINE_NAME = "Glitch Toaster";
-const MACHINE_MIN_DAMAGE = 2;
-const MACHINE_MAX_DAMAGE = 4;
 const GRID_COLUMNS = 2;
 
 export const ATTACKS: readonly Attack[] = [
@@ -43,26 +44,51 @@ export const ATTACKS: readonly Attack[] = [
     message: "You ask why it exists. It stalls, whirring.",
     minDamage: 6,
     maxDamage: 8,
+    maxSelfDestructChance: 0.6,
+    healsPlayer: 0,
+    stunsMachine: false,
   },
   {
     name: "Point at bugs",
     message: "You point at a bug. It twitches, ashamed.",
     minDamage: 4,
     maxDamage: 6,
+    maxSelfDestructChance: 0.3,
+    healsPlayer: 0,
+    stunsMachine: false,
   },
   {
     name: "Awkward pause",
-    message: "You stare in silence. Its fan gets loud.",
+    message: "You stare in silence. It freezes and forgets to strike back.",
     minDamage: 3,
     maxDamage: 5,
+    maxSelfDestructChance: 0.2,
+    healsPlayer: 0,
+    stunsMachine: true,
   },
   {
     name: "Compliment",
-    message: "You compliment its toast. It does not know how to react.",
+    message: "You compliment it. It does not know how to react. You feel good.",
     minDamage: 2,
     maxDamage: 4,
+    maxSelfDestructChance: 0.1,
+    healsPlayer: 3,
+    stunsMachine: false,
   },
 ];
+
+export function selfDestructChance(
+  attackIndex: number,
+  machineHp: number,
+  machineMaxHp: number,
+): number {
+  const attack = ATTACKS[attackIndex];
+  if (attack === undefined || machineMaxHp <= 0) {
+    return 0;
+  }
+  const lostShare = 1 - Math.min(machineHp, machineMaxHp) / machineMaxHp;
+  return attack.maxSelfDestructChance * lostShare;
+}
 
 function moveInGrid(selected: number, direction: Direction): number {
   const column = selected % GRID_COLUMNS;
@@ -77,15 +103,20 @@ function rollDamage(random: Random, min: number, max: number): number {
   return min + Math.floor(random() * (max - min + 1));
 }
 
+function drawMachine(random: Random): Machine {
+  return MACHINES[Math.floor(random() * MACHINES.length)] ?? MACHINES[0];
+}
+
 export function createBattle(
   random: Random,
   startingPlayerHp: number = PLAYER_MAX_HP,
 ): Battle {
+  const machine = drawMachine(random);
   let playerHp = startingPlayerHp;
-  let machineHp = MACHINE_MAX_HP;
+  let machineHp = machine.maxHp;
   let selected = 0;
   let outcome: BattleOutcome | null = null;
-  let pages: readonly TextPage[] = paginate(`A ${MACHINE_NAME} appears!`);
+  let pages: readonly TextPage[] = paginate(`A ${machine.name} appears!`);
   let pageIndex = 0;
   let phase: BattlePhase = "message";
 
@@ -95,21 +126,28 @@ export function createBattle(
     phase = "message";
   }
 
-  function playRound(attack: Attack): void {
+  function playRound(attackIndex: number, attack: Attack): void {
     const texts = [attack.message];
     machineHp = Math.max(
       0,
       machineHp - rollDamage(random, attack.minDamage, attack.maxDamage),
     );
+    playerHp = Math.min(PLAYER_MAX_HP, playerHp + attack.healsPlayer);
     if (machineHp === 0) {
       outcome = "won";
-      texts.push(`The ${MACHINE_NAME} gives up. You win!`);
-    } else {
+      texts.push(`The ${machine.name} gives up.`, machine.conversion);
+    } else if (
+      random() < selfDestructChance(attackIndex, machineHp, machine.maxHp)
+    ) {
+      machineHp = 0;
+      outcome = "won";
+      texts.push(...machine.selfDestruct, machine.conversion);
+    } else if (!attack.stunsMachine) {
       playerHp = Math.max(
         0,
-        playerHp - rollDamage(random, MACHINE_MIN_DAMAGE, MACHINE_MAX_DAMAGE),
+        playerHp - rollDamage(random, machine.minDamage, machine.maxDamage),
       );
-      texts.push(`The ${MACHINE_NAME} sprays toast crumbs at you.`);
+      texts.push(machine.counterAttack);
       if (playerHp === 0) {
         outcome = "lost";
         playerHp = PLAYER_MAX_HP;
@@ -122,9 +160,10 @@ export function createBattle(
   return {
     phase: () => phase,
     outcome: () => outcome,
-    machineName: () => MACHINE_NAME,
+    machineKind: () => machine.kind,
+    machineName: () => machine.name,
     machineHp: () => machineHp,
-    machineMaxHp: () => MACHINE_MAX_HP,
+    machineMaxHp: () => machine.maxHp,
     playerHp: () => playerHp,
     playerMaxHp: () => PLAYER_MAX_HP,
     attackNames: () => ATTACKS.map((attack) => attack.name),
@@ -141,7 +180,7 @@ export function createBattle(
         return;
       }
       selected = index;
-      playRound(attack);
+      playRound(index, attack);
     },
     confirm() {
       this.choose(selected);

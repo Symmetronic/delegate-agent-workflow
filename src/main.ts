@@ -3,17 +3,20 @@ import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
+import type { MachineKind } from "#/src/machines.ts";
 import { createPlayer, walk } from "#/src/movement.ts";
 import { PALETTE } from "#/src/palette.ts";
 import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
   bakeSprite,
   BUBBLE_SPRITE,
-  MACHINE_SPRITE,
   PLAYER_SPRITES,
+  PRINTER_SPRITE,
   SYSADMIN_SPRITE,
   TERMINAL_SPRITE,
   TILE_SPRITES,
+  TOASTER_SPRITE,
+  VACUUM_SPRITE,
 } from "#/src/sprites.ts";
 import { createStory } from "#/src/story.ts";
 import type { TextPage } from "#/src/text-window.ts";
@@ -63,7 +66,11 @@ const glyphImages = new Map(
 const sysadminImage = bakeSprite(SYSADMIN_SPRITE);
 const bubbleImage = bakeSprite(BUBBLE_SPRITE);
 const terminalImage = bakeSprite(TERMINAL_SPRITE);
-const machineImage = bakeSprite(MACHINE_SPRITE);
+const machineImages: Readonly<Record<MachineKind, HTMLCanvasElement>> = {
+  toaster: bakeSprite(TOASTER_SPRITE),
+  printer: bakeSprite(PRINTER_SPRITE),
+  vacuum: bakeSprite(VACUUM_SPRITE),
+};
 
 const BATTLE_DIRECTION_BY_KEY: Readonly<Record<string, Direction>> = {
   ArrowUp: "up",
@@ -284,7 +291,11 @@ function drawBattle(active: Battle): void {
     active.machineHp(),
     active.machineMaxHp(),
   );
-  context.drawImage(machineImage, MACHINE_IMAGE.x, MACHINE_IMAGE.y);
+  context.drawImage(
+    machineImages[active.machineKind()],
+    MACHINE_IMAGE.x,
+    MACHINE_IMAGE.y,
+  );
   drawText("You", PLAYER_LABEL.x, PLAYER_LABEL.y);
   drawBar(PLAYER_BAR.x, PLAYER_BAR.y, active.playerHp(), active.playerMaxHp());
   drawText(

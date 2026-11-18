@@ -65,7 +65,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - The battle cannot be left in a stuck state: every round ends either in the next selection or in the return to the world
 - Battle resolution and the encounter trigger are modules testable without a browser
 
-## [ ] 7. Pick from four jokes against three machines
+## [x] 7. Pick from four jokes against three machines
 
 **Blocked by:** 6
 
