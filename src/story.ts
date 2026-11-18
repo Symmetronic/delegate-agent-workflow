@@ -1,4 +1,4 @@
-import { createLogs, TOTAL_LOGS } from "#/src/logs.ts";
+import { createTerminals, TOTAL_TERMINALS } from "#/src/terminals.ts";
 import { paginate, type TextPage } from "#/src/text-window.ts";
 
 export interface Story {
@@ -7,7 +7,7 @@ export interface Story {
   hasMorePages(): boolean;
   advance(): void;
   talkToSysadmin(): void;
-  readLog(index: number): void;
+  readTerminal(index: number): void;
   isBubbleVisible(): boolean;
   hasUltimate(): boolean;
 }
@@ -23,12 +23,12 @@ export const SYSADMIN_WINDOWS: readonly string[] = [
   "Go into the cable grass and ask them something awkward. Good luck!",
 ];
 
-export function sysadminReminder(found: number): string {
-  return `Cable grass, awkward questions. Logs found: ${String(found)} of ${String(TOTAL_LOGS)}.`;
+export function sysadminReminder(read: number): string {
+  return `Cable grass, awkward questions. Terminals read: ${String(read)} of ${String(TOTAL_TERMINALS)}.`;
 }
 
 export const ULTIMATE_TRADE_WINDOWS: readonly string[] = [
-  "You found all five logs! Now the machines' secrets are yours.",
+  "You read all five terminals! Now the machines' secrets are yours.",
   "Take this: Show it a picture of a cat. I will trade you for Compliment.",
   "Nothing melts a machine like a fluffy cat. Use it wisely.",
 ];
@@ -42,7 +42,7 @@ export function createStory(): Story {
   let index = 0;
   let talkedToSysadmin = false;
   let ultimateTraded = false;
-  const logs = createLogs();
+  const terminals = createTerminals();
 
   function open(texts: readonly string[]): void {
     pages = toPages(texts);
@@ -71,7 +71,7 @@ export function createStory(): Story {
       if (
         talkedToSysadmin &&
         !ultimateTraded &&
-        logs.foundCount() >= TOTAL_LOGS
+        terminals.readCount() >= TOTAL_TERMINALS
       ) {
         ultimateTraded = true;
         open(ULTIMATE_TRADE_WINDOWS);
@@ -79,20 +79,20 @@ export function createStory(): Story {
       }
       open(
         talkedToSysadmin
-          ? [sysadminReminder(logs.foundCount())]
+          ? [sysadminReminder(terminals.readCount())]
           : SYSADMIN_WINDOWS,
       );
       talkedToSysadmin = true;
     },
-    readLog(logIndex) {
+    readTerminal(terminalIndex) {
       if (index < pages.length) {
         return;
       }
-      const finding = logs.find(logIndex);
-      if (finding.status === "found") {
-        open([finding.text]);
-      } else if (finding.status === "already-found") {
-        open([`Log ${String(finding.number)} is already found.`]);
+      const reading = terminals.read(terminalIndex);
+      if (reading.status === "read") {
+        open([reading.text]);
+      } else if (reading.status === "already-read") {
+        open([`Terminal ${String(reading.number)} is already read.`]);
       }
     },
     isBubbleVisible() {

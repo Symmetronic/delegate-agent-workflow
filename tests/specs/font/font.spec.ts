@@ -1,12 +1,13 @@
 import { ATTACKS, PLAYER_MAX_HP, ULTIMATE_ATTACK } from "#/src/battle.ts";
 import { GLYPH_SPRITES } from "#/src/font.ts";
-import { LOG_CONFESSIONS } from "#/src/logs.ts";
+
 import { MACHINES } from "#/src/machines.ts";
 import {
   SYSADMIN_WINDOWS,
   sysadminReminder,
   ULTIMATE_TRADE_WINDOWS,
 } from "#/src/story.ts";
+import { TERMINAL_CONFESSIONS } from "#/src/terminals.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -22,7 +23,7 @@ describe("font", () => {
       ...SYSADMIN_WINDOWS,
       ...ULTIMATE_TRADE_WINDOWS,
       sysadminReminder(0),
-      ...LOG_CONFESSIONS,
+      ...TERMINAL_CONFESSIONS,
       ...[...ATTACKS, ULTIMATE_ATTACK].flatMap((attack) => [
         attack.name,
         attack.message,

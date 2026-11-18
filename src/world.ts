@@ -83,7 +83,7 @@ export function isCableGrass(kind: TileKind): boolean {
   return kind === "cable-grass";
 }
 
-export const LOG_TILES: readonly TilePosition[] = [
+export const TERMINAL_TILES: readonly TilePosition[] = [
   { column: 6, row: 5 },
   { column: 36, row: 2 },
   { column: 30, row: 26 },

@@ -23,9 +23,9 @@ import { createStory } from "#/src/story.ts";
 import type { TextPage } from "#/src/text-window.ts";
 import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
-  LOG_TILES,
   PLAYER_START,
   SYSADMIN_TILE,
+  TERMINAL_TILES,
   TILE_SIZE,
   tileAt,
   WORLD_COLUMNS,
@@ -113,7 +113,7 @@ const SYSADMIN_POSITION = {
   y: SYSADMIN_TILE.row * TILE_SIZE,
 };
 
-const LOG_POSITIONS = LOG_TILES.map((tile) => ({
+const TERMINAL_POSITIONS = TERMINAL_TILES.map((tile) => ({
   x: tile.column * TILE_SIZE,
   y: tile.row * TILE_SIZE,
 }));
@@ -240,7 +240,7 @@ function draw(timestamp: number): void {
       );
     }
   }
-  for (const position of LOG_POSITIONS) {
+  for (const position of TERMINAL_POSITIONS) {
     context.drawImage(
       terminalImage,
       position.x - camera.x,
@@ -411,9 +411,9 @@ function interact(isTarget: (target: Point) => boolean): void {
     story.talkToSysadmin();
     return;
   }
-  const logIndex = LOG_POSITIONS.findIndex(isTarget);
-  if (logIndex >= 0) {
-    story.readLog(logIndex);
+  const terminalIndex = TERMINAL_POSITIONS.findIndex(isTarget);
+  if (terminalIndex >= 0) {
+    story.readTerminal(terminalIndex);
   }
 }
 
