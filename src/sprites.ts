@@ -141,3 +141,14 @@ export const BUBBLE_SPRITE: SpriteRows = [
   "3333333",
   "..3....",
 ];
+
+export const TERMINAL_SPRITE: SpriteRows = [
+  ".333333.",
+  "32222223",
+  "32100123",
+  "32010123",
+  "32222223",
+  ".333333.",
+  "..3333..",
+  ".333333.",
+];

@@ -8,11 +8,13 @@ import {
   BUBBLE_SPRITE,
   PLAYER_SPRITES,
   SYSADMIN_SPRITE,
+  TERMINAL_SPRITE,
   TILE_SPRITES,
 } from "#/src/sprites.ts";
 import { createStory } from "#/src/story.ts";
 import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
+  LOG_TILES,
   PLAYER_START,
   SYSADMIN_TILE,
   TILE_SIZE,
@@ -55,6 +57,7 @@ const glyphImages = new Map(
 );
 const sysadminImage = bakeSprite(SYSADMIN_SPRITE);
 const bubbleImage = bakeSprite(BUBBLE_SPRITE);
+const terminalImage = bakeSprite(TERMINAL_SPRITE);
 
 const WINDOW_MARGIN = 4;
 const WINDOW_PADDING = 4;
@@ -76,6 +79,11 @@ const SYSADMIN_POSITION = {
   x: SYSADMIN_TILE.column * TILE_SIZE,
   y: SYSADMIN_TILE.row * TILE_SIZE,
 };
+
+const LOG_POSITIONS = LOG_TILES.map((tile) => ({
+  x: tile.column * TILE_SIZE,
+  y: tile.row * TILE_SIZE,
+}));
 
 const story = createStory();
 const walkInput = createWalkInput();
@@ -156,6 +164,13 @@ function draw(timestamp: number): void {
       );
     }
   }
+  for (const position of LOG_POSITIONS) {
+    context.drawImage(
+      terminalImage,
+      position.x - camera.x,
+      position.y - camera.y,
+    );
+  }
   context.drawImage(
     sysadminImage,
     SYSADMIN_POSITION.x - camera.x,
@@ -213,38 +228,49 @@ function cameraOrigin(): Point {
   );
 }
 
-function isTapOnSysadmin(point: Point): boolean {
+function toLogical(point: Point): Point | null {
   if (canvas === null) {
-    return false;
+    return null;
   }
   const bounds = canvas.getBoundingClientRect();
+  return {
+    x: ((point.x - bounds.left) * LOGICAL_SIZE.width) / bounds.width,
+    y: ((point.y - bounds.top) * LOGICAL_SIZE.height) / bounds.height,
+  };
+}
+
+function isTapOn(point: Point, target: Point): boolean {
+  const logical = toLogical(point);
   const camera = cameraOrigin();
-  const logicalX =
-    ((point.x - bounds.left) * LOGICAL_SIZE.width) / bounds.width;
-  const logicalY =
-    ((point.y - bounds.top) * LOGICAL_SIZE.height) / bounds.height;
   return (
+    logical !== null &&
     Math.hypot(
-      logicalX - (SYSADMIN_POSITION.x - camera.x + TILE_SIZE / (1 + 1)),
-      logicalY - (SYSADMIN_POSITION.y - camera.y + TILE_SIZE / (1 + 1)),
+      logical.x - (target.x - camera.x + TILE_SIZE / (1 + 1)),
+      logical.y - (target.y - camera.y + TILE_SIZE / (1 + 1)),
     ) <= TAP_RADIUS
   );
 }
 
-function isNearSysadmin(): boolean {
-  return (
-    Math.hypot(
-      player.x - SYSADMIN_POSITION.x,
-      player.y - SYSADMIN_POSITION.y,
-    ) <= TALK_DISTANCE
-  );
+function isNear(target: Point): boolean {
+  return Math.hypot(player.x - target.x, player.y - target.y) <= TALK_DISTANCE;
+}
+
+function interact(isTarget: (target: Point) => boolean): void {
+  if (isTarget(SYSADMIN_POSITION)) {
+    story.talkToSysadmin();
+    return;
+  }
+  const logIndex = LOG_POSITIONS.findIndex(isTarget);
+  if (logIndex >= 0) {
+    story.readLog(logIndex);
+  }
 }
 
 function handleTap(point: Point): void {
   if (story.isOpen()) {
     story.advance();
-  } else if (isTapOnSysadmin(point)) {
-    story.talkToSysadmin();
+  } else {
+    interact((target) => isTapOn(point, target));
   }
 }
 
@@ -274,8 +300,8 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.repeat) {
     if (story.isOpen()) {
       story.advance();
-    } else if (isNearSysadmin()) {
-      story.talkToSysadmin();
+    } else {
+      interact(isNear);
     }
   }
   walkInput.keyDown(event.key);

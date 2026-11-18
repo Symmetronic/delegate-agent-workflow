@@ -44,7 +44,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - Text wraps and paginates to fit the 160×144 screen in both orientations
 - Dialog progression, the first-talk state and the bubble's visibility are driven by a module testable without a browser
 
-## [ ] 5. Find the confession logs
+## [x] 5. Find the confession logs
 
 **Blocked by:** 4
 

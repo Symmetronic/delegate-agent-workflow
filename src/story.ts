@@ -1,3 +1,4 @@
+import { createLogs, TOTAL_LOGS } from "#/src/logs.ts";
 import { paginate, type TextPage } from "#/src/text-window.ts";
 
 export interface Story {
@@ -6,6 +7,7 @@ export interface Story {
   hasMorePages(): boolean;
   advance(): void;
   talkToSysadmin(): void;
+  readLog(index: number): void;
   isBubbleVisible(): boolean;
 }
 
@@ -20,8 +22,9 @@ export const SYSADMIN_WINDOWS: readonly string[] = [
   "Go into the cable grass and ask them something awkward. Good luck!",
 ];
 
-export const SYSADMIN_REMINDER =
-  "Cable grass, awkward questions. You know the drill.";
+export function sysadminReminder(found: number): string {
+  return `Cable grass, awkward questions. Logs found: ${String(found)} of ${String(TOTAL_LOGS)}.`;
+}
 
 function toPages(texts: readonly string[]): readonly TextPage[] {
   return texts.flatMap((text) => paginate(text));
@@ -31,6 +34,7 @@ export function createStory(): Story {
   let pages: readonly TextPage[] = toPages([INTRO_TEXT]);
   let index = 0;
   let talkedToSysadmin = false;
+  const logs = createLogs();
 
   function open(texts: readonly string[]): void {
     pages = toPages(texts);
@@ -56,8 +60,23 @@ export function createStory(): Story {
       if (index < pages.length) {
         return;
       }
-      open(talkedToSysadmin ? [SYSADMIN_REMINDER] : SYSADMIN_WINDOWS);
+      open(
+        talkedToSysadmin
+          ? [sysadminReminder(logs.foundCount())]
+          : SYSADMIN_WINDOWS,
+      );
       talkedToSysadmin = true;
+    },
+    readLog(logIndex) {
+      if (index < pages.length) {
+        return;
+      }
+      const finding = logs.find(logIndex);
+      if (finding.status === "found") {
+        open([finding.text]);
+      } else if (finding.status === "already-found") {
+        open([`Log ${String(finding.number)} is already found.`]);
+      }
     },
     isBubbleVisible() {
       return !talkedToSysadmin;

@@ -1,4 +1,4 @@
-import { createStory, SYSADMIN_REMINDER, type Story } from "#/src/story.ts";
+import { createStory, sysadminReminder, type Story } from "#/src/story.ts";
 import { TEXT_COLUMNS, TEXT_LINES } from "#/src/text-window.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -74,7 +74,7 @@ describe("story", () => {
     countWindows(story);
     story.talkToSysadmin();
 
-    assert.equal(story.page()?.join(" "), SYSADMIN_REMINDER);
+    assert.equal(story.page()?.join(" "), sysadminReminder(0));
     assert.equal(countWindows(story), 1);
     assert.ok(!story.isBubbleVisible());
   });
