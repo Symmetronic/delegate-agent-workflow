@@ -97,7 +97,10 @@ const BUBBLE_HEIGHT = 8;
 const TWO_FINGERS = 2;
 const TAP_RADIUS = 16;
 const TALK_DISTANCE = 20;
-const PLAYER_CENTER_OFFSET = TILE_SIZE / (1 + 1);
+const HALF = 2;
+const BOTH_SIDES = 2;
+const BUBBLE_BOB_FRAMES = 2;
+const TILE_CENTER_OFFSET = TILE_SIZE / HALF;
 const PIXELS_PER_WALK_FRAME = 4;
 const MAX_FRAME_MILLISECONDS = 100;
 const WORLD_SIZE = {
@@ -127,15 +130,15 @@ let playerHp: number | null = null;
 let lastTile = tileKey();
 
 function tileKey(): string {
-  const column = Math.floor((player.x + PLAYER_CENTER_OFFSET) / TILE_SIZE);
-  const row = Math.floor((player.y + PLAYER_CENTER_OFFSET) / TILE_SIZE);
+  const column = Math.floor((player.x + TILE_CENTER_OFFSET) / TILE_SIZE);
+  const row = Math.floor((player.y + TILE_CENTER_OFFSET) / TILE_SIZE);
   return `${String(column)},${String(row)}`;
 }
 
 function currentTileKind(): TileKind {
   return tileAt(
-    Math.floor((player.x + PLAYER_CENTER_OFFSET) / TILE_SIZE),
-    Math.floor((player.y + PLAYER_CENTER_OFFSET) / TILE_SIZE),
+    Math.floor((player.x + TILE_CENTER_OFFSET) / TILE_SIZE),
+    Math.floor((player.y + TILE_CENTER_OFFSET) / TILE_SIZE),
   );
 }
 
@@ -163,6 +166,17 @@ function endBattleWhenFinished(): void {
   battle = null;
 }
 
+function cameraOrigin(): Point {
+  return computeCameraOrigin(
+    {
+      x: player.x + TILE_CENTER_OFFSET,
+      y: player.y + TILE_CENTER_OFFSET,
+    },
+    LOGICAL_SIZE,
+    WORLD_SIZE,
+  );
+}
+
 function drawText(line: string, x: number, y: number): void {
   if (context === null) {
     return;
@@ -181,7 +195,7 @@ function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
   if (context === null || page === null) {
     return;
   }
-  const width = LOGICAL_SIZE.width - WINDOW_MARGIN * (1 + 1);
+  const width = LOGICAL_SIZE.width - WINDOW_MARGIN * BOTH_SIDES;
   const top = LOGICAL_SIZE.height - WINDOW_MARGIN - WINDOW_HEIGHT;
   context.fillStyle = PALETTE.darkest;
   context.fillRect(WINDOW_MARGIN, top, width, WINDOW_HEIGHT);
@@ -189,8 +203,8 @@ function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
   context.fillRect(
     WINDOW_MARGIN + 1,
     top + 1,
-    width - (1 + 1),
-    WINDOW_HEIGHT - (1 + 1),
+    width - BOTH_SIDES,
+    WINDOW_HEIGHT - BOTH_SIDES,
   );
   page.forEach((line, index) => {
     drawText(
@@ -214,14 +228,7 @@ function draw(timestamp: number): void {
   if (context === null) {
     return;
   }
-  const camera = computeCameraOrigin(
-    {
-      x: player.x + PLAYER_CENTER_OFFSET,
-      y: player.y + PLAYER_CENTER_OFFSET,
-    },
-    LOGICAL_SIZE,
-    WORLD_SIZE,
-  );
+  const camera = cameraOrigin();
   context.fillStyle = PALETTE.lightest;
   context.fillRect(0, 0, LOGICAL_SIZE.width, LOGICAL_SIZE.height);
   const firstColumn = Math.floor(camera.x / TILE_SIZE);
@@ -250,7 +257,8 @@ function draw(timestamp: number): void {
     SYSADMIN_POSITION.y - camera.y,
   );
   if (story.isBubbleVisible()) {
-    const bob = Math.floor(timestamp / BUBBLE_BOB_MILLISECONDS) % (1 + 1);
+    const bob =
+      Math.floor(timestamp / BUBBLE_BOB_MILLISECONDS) % BUBBLE_BOB_FRAMES;
     context.drawImage(
       bubbleImage,
       SYSADMIN_POSITION.x - camera.x,
@@ -275,15 +283,15 @@ function drawBar(x: number, y: number, current: number, max: number): void {
     return;
   }
   context.fillStyle = PALETTE.darkest;
-  context.fillRect(x, y, BAR_WIDTH + (1 + 1), BAR_HEIGHT);
+  context.fillRect(x, y, BAR_WIDTH + BOTH_SIDES, BAR_HEIGHT);
   context.fillStyle = PALETTE.lightest;
-  context.fillRect(x + 1, y + 1, BAR_WIDTH, BAR_HEIGHT - (1 + 1));
+  context.fillRect(x + 1, y + 1, BAR_WIDTH, BAR_HEIGHT - BOTH_SIDES);
   context.fillStyle = PALETTE.dark;
   context.fillRect(
     x + 1,
     y + 1,
     Math.ceil((BAR_WIDTH * current) / max),
-    BAR_HEIGHT - (1 + 1),
+    BAR_HEIGHT - BOTH_SIDES,
   );
 }
 
@@ -325,8 +333,8 @@ function drawBattle(active: Battle): void {
     context.fillRect(
       cell.x + CELL_BORDER,
       cell.y + CELL_BORDER,
-      cell.width - CELL_BORDER * (1 + 1),
-      cell.height - CELL_BORDER * (1 + 1),
+      cell.width - CELL_BORDER * BOTH_SIDES,
+      cell.height - CELL_BORDER * BOTH_SIDES,
     );
     const label = attackLabel(cell, names[index] ?? "");
     label.lines.forEach((line, lineIndex) => {
@@ -371,17 +379,6 @@ function touchPoint(event: TouchEvent): Point | null {
 let muteGestureActive = false;
 let lastTouchStart: Point = { x: 0, y: 0 };
 
-function cameraOrigin(): Point {
-  return computeCameraOrigin(
-    {
-      x: player.x + PLAYER_CENTER_OFFSET,
-      y: player.y + PLAYER_CENTER_OFFSET,
-    },
-    LOGICAL_SIZE,
-    WORLD_SIZE,
-  );
-}
-
 function toLogical(point: Point): Point | null {
   if (canvas === null) {
     return null;
@@ -399,8 +396,8 @@ function isTapOn(point: Point, target: Point): boolean {
   return (
     logical !== null &&
     Math.hypot(
-      logical.x - (target.x - camera.x + TILE_SIZE / (1 + 1)),
-      logical.y - (target.y - camera.y + TILE_SIZE / (1 + 1)),
+      logical.x - (target.x - camera.x + TILE_CENTER_OFFSET),
+      logical.y - (target.y - camera.y + TILE_CENTER_OFFSET),
     ) <= TAP_RADIUS
   );
 }

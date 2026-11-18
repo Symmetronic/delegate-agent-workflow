@@ -16,6 +16,7 @@ import { describe, it } from "node:test";
 
 const ATTACK_COUNT = 4;
 const LAST_ATTACK = 3;
+const BOTTOM_LEFT_ATTACK = 2;
 const MAX_ROLL = 0.999;
 const MAX_ROUNDS = 100;
 const ENCOUNTER_CHANCE = 0.25;
@@ -191,7 +192,7 @@ describe("battle", () => {
     battle.moveSelection("down");
     assert.equal(battle.selected(), LAST_ATTACK);
     battle.moveSelection("left");
-    assert.equal(battle.selected(), ATTACK_COUNT / (1 + 1));
+    assert.equal(battle.selected(), BOTTOM_LEFT_ATTACK);
     battle.moveSelection("up");
     assert.equal(battle.selected(), 0);
     battle.moveSelection("up");
