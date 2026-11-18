@@ -14,7 +14,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - The canvas never overflows the viewport and keeps its aspect ratio in both orientations
 - Touch gestures that would scroll, zoom or select on the page do not disturb the screen
 
-## [ ] 2. See the world
+## [x] 2. See the world
 
 **Blocked by:** 1
 

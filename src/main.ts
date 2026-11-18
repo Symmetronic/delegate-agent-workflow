@@ -1,17 +1,15 @@
+import { computeCameraOrigin } from "#/src/camera.ts";
+import { PALETTE } from "#/src/palette.ts";
 import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
-
-const PALETTE = {
-  lightest: "#9bbc0f",
-  light: "#8bac0f",
-  dark: "#306230",
-  darkest: "#0f380f",
-} as const;
-
-const CHECKER_SIZE = 8;
-
-const CHECKER_PERIOD = 16;
-
-const HALF_PIXEL = 0.5;
+import { bakeSprite, PLAYER_SPRITE, TILE_SPRITES } from "#/src/sprites.ts";
+import {
+  PLAYER_START,
+  TILE_SIZE,
+  tileAt,
+  WORLD_COLUMNS,
+  WORLD_ROWS,
+  type TileKind,
+} from "#/src/world.ts";
 
 const canvas = document.querySelector("canvas");
 if (canvas === null) {
@@ -25,21 +23,42 @@ if (context === null) {
 canvas.width = LOGICAL_SIZE.width;
 canvas.height = LOGICAL_SIZE.height;
 
-for (let y = 0; y < LOGICAL_SIZE.height; y += CHECKER_SIZE) {
-  for (let x = 0; x < LOGICAL_SIZE.width; x += CHECKER_SIZE) {
-    const isEven = (x + y) % CHECKER_PERIOD === 0;
-    context.fillStyle = isEven ? PALETTE.lightest : PALETTE.light;
-    context.fillRect(x, y, CHECKER_SIZE, CHECKER_SIZE);
+const tileImages: Record<TileKind, HTMLCanvasElement> = {
+  ground: bakeSprite(TILE_SPRITES.ground),
+  "cable-grass": bakeSprite(TILE_SPRITES["cable-grass"]),
+  obstacle: bakeSprite(TILE_SPRITES.obstacle),
+  "floor-mat": bakeSprite(TILE_SPRITES["floor-mat"]),
+};
+const playerImage = bakeSprite(PLAYER_SPRITE);
+
+const PLAYER_CENTER_OFFSET = TILE_SIZE / (1 + 1);
+
+const player = {
+  x: PLAYER_START.column * TILE_SIZE,
+  y: PLAYER_START.row * TILE_SIZE,
+};
+const camera = computeCameraOrigin(
+  { x: player.x + PLAYER_CENTER_OFFSET, y: player.y + PLAYER_CENTER_OFFSET },
+  LOGICAL_SIZE,
+  { width: WORLD_COLUMNS * TILE_SIZE, height: WORLD_ROWS * TILE_SIZE },
+);
+
+context.fillStyle = PALETTE.lightest;
+context.fillRect(0, 0, LOGICAL_SIZE.width, LOGICAL_SIZE.height);
+const firstColumn = Math.floor(camera.x / TILE_SIZE);
+const lastColumn = Math.ceil((camera.x + LOGICAL_SIZE.width) / TILE_SIZE);
+const firstRow = Math.floor(camera.y / TILE_SIZE);
+const lastRow = Math.ceil((camera.y + LOGICAL_SIZE.height) / TILE_SIZE);
+for (let row = firstRow; row < lastRow; row += 1) {
+  for (let column = firstColumn; column < lastColumn; column += 1) {
+    context.drawImage(
+      tileImages[tileAt(column, row)],
+      column * TILE_SIZE - camera.x,
+      row * TILE_SIZE - camera.y,
+    );
   }
 }
-context.strokeStyle = PALETTE.darkest;
-context.lineWidth = 1;
-context.strokeRect(
-  HALF_PIXEL,
-  HALF_PIXEL,
-  LOGICAL_SIZE.width - 1,
-  LOGICAL_SIZE.height - 1,
-);
+context.drawImage(playerImage, player.x - camera.x, player.y - camera.y);
 
 function fitCanvasToViewport(): void {
   const { cssSize } = computeScreenLayout(
