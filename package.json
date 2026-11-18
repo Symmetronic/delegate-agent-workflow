@@ -1,9 +1,13 @@
 {
-  "name": "app",
+  "name": "delegate-agent-workflow",
   "version": "0.1.0",
   "private": true,
   "author": "Simon Hochholzer <simon@symmetronic.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Symmetronic/delegate-agent-workflow.git"
+  },
   "type": "module",
   "imports": {
     "#/*": "./*"
