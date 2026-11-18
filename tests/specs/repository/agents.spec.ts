@@ -3,7 +3,11 @@ import mcp from "#/.mcp.json" with { type: "json" };
 import { preToolUseHooksBlock } from "#/tests/utils/hooks.ts";
 import { connectMcpServer } from "#/tests/utils/mcp.ts";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const COMMANDS_THAT_READ_ENV_FILES = [
   "cat .env",
@@ -42,6 +46,59 @@ const NON_LOCAL_URLS = [
   "file:///workspace/.env",
   "javascript:void(0)",
 ] as const;
+
+const DELEGATE_SKILL_DIRECTORY = fileURLToPath(
+  new URL("../../../.claude/skills/delegate/", import.meta.url),
+);
+const DELEGATE_RUN_SCRIPT = `${DELEGATE_SKILL_DIRECTORY}scripts/run.sh`;
+
+const MALFORMED_TASKS_FILES = {
+  "has no tasks": "# Goal\n\nContext.\n",
+  "has a ticked task": "# Goal\n\n## [x] 1. First\n\n## [ ] 2. Second\n",
+  "skips a task number": "# Goal\n\n## [ ] 1. First\n\n## [ ] 3. Third\n",
+  "does not start at task 1": "# Goal\n\n## [ ] 2. Second\n",
+  "has a heading without a checkbox": "# Goal\n\n## 1. First\n",
+} as const;
+
+interface DelegateOutcome {
+  readonly status: number | null;
+  readonly lines: readonly string[];
+}
+
+function runDelegate(...args: readonly string[]): DelegateOutcome {
+  const result = spawnSync("sh", [DELEGATE_RUN_SCRIPT, ...args], {
+    encoding: "utf8",
+  });
+  return { status: result.status, lines: result.stdout.trimEnd().split("\n") };
+}
+
+function runDelegateWithTasksFile(tasksFile: string): DelegateOutcome {
+  const branch = `test-${randomUUID()}`;
+  const runDirectory = `${DELEGATE_SKILL_DIRECTORY}runs/${branch}`;
+  mkdirSync(runDirectory, { recursive: true });
+  try {
+    writeFileSync(`${runDirectory}/TASKS.md`, tasksFile);
+    return runDelegate(branch);
+  } finally {
+    rmSync(runDirectory, { recursive: true, force: true });
+  }
+}
+
+function assertDelegateFailedBeforeStarting(
+  outcome: DelegateOutcome,
+  reason: RegExp,
+  message: string,
+): void {
+  const [outcomeLine = ""] = outcome.lines;
+  assert.equal(outcome.status, 1, message);
+  assert.equal(outcome.lines.length, 1, message);
+  assert.match(
+    outcomeLine,
+    /^delegate: failed during check prerequisites: .*; nothing was pushed$/u,
+    message,
+  );
+  assert.match(outcomeLine, reason, message);
+}
 
 describe("agents", () => {
   it(".claude/settings.json denies reading .env files anywhere, so that secrets stay out of the model context", () => {
@@ -117,4 +174,30 @@ describe("agents", () => {
       );
     },
   );
+
+  it(".claude/skills/delegate/scripts/run.sh without a branch fails with its usage as the outcome line", () => {
+    assertDelegateFailedBeforeStarting(
+      runDelegate(),
+      /usage: run\.sh <branch>/u,
+      "must print the usage",
+    );
+  });
+
+  it(".claude/skills/delegate/scripts/run.sh fails with an outcome line when the branch has no tasks file", () => {
+    assertDelegateFailedBeforeStarting(
+      runDelegate(`test-${randomUUID()}`),
+      /missing tasks file/u,
+      "must name the missing tasks file",
+    );
+  });
+
+  it(".claude/skills/delegate/scripts/run.sh rejects malformed tasks files before building the image, so that mistakes surface fast", () => {
+    for (const [problem, tasksFile] of Object.entries(MALFORMED_TASKS_FILES)) {
+      assertDelegateFailedBeforeStarting(
+        runDelegateWithTasksFile(tasksFile),
+        /every task heading .* must look like/u,
+        `must reject a tasks file that ${problem}`,
+      );
+    }
+  });
 });
