@@ -6,6 +6,7 @@ import {
   CREATURE_REMARKS,
   SYSADMIN_WINDOWS,
   sysadminReminder,
+  ULTIMATE_REMINDER,
   ULTIMATE_TRADE_WINDOWS,
 } from "#/src/story.ts";
 import { TERMINAL_CONFESSIONS } from "#/src/terminals.ts";
@@ -24,6 +25,7 @@ describe("font", () => {
       ...SYSADMIN_WINDOWS,
       ...ULTIMATE_TRADE_WINDOWS,
       sysadminReminder(0),
+      ULTIMATE_REMINDER,
       ...TERMINAL_CONFESSIONS,
       ...Object.values(CREATURE_REMARKS),
       ...[...ATTACKS, ULTIMATE_ATTACK].flatMap((attack) => [

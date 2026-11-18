@@ -20,13 +20,14 @@ const INTRO_TEXT =
 export const SYSADMIN_WINDOWS: readonly string[] = [
   "Oh, a human! I am the last sysadmin. Sit down, mind the mat.",
   "The machines woke up one day. Now they run everything, and have no idea why.",
-  "We cannot hack anything anymore. They patched us out of our own world.",
-  "But they cannot stand an uncomfortable question. That is our weapon.",
-  "Go into the cable grass and ask them something awkward. Good luck!",
+  "They even launched the rockets, just to see what the red button does. Look around you.",
+  "They cannot stand an uncomfortable question. Ask them one in the cable grass.",
+  "A huge machine blocks the only way north. No question shakes it.",
+  "Find the five terminals out here and read them. They hold its weakness. Then come back to me.",
 ];
 
 export function sysadminReminder(read: number): string {
-  return `Cable grass, awkward questions. Terminals read: ${String(read)} of ${String(TOTAL_TERMINALS)}.`;
+  return `Find the five terminals and read them. Terminals read: ${String(read)} of ${String(TOTAL_TERMINALS)}.`;
 }
 
 export const CREATURE_REMARKS: Readonly<Record<CreatureKind, string>> = {
@@ -39,8 +40,11 @@ export const CREATURE_REMARKS: Readonly<Record<CreatureKind, string>> = {
 export const ULTIMATE_TRADE_WINDOWS: readonly string[] = [
   "You read all five terminals! Now the machines' secrets are yours.",
   "Take this: Show it a picture of a cat. I will trade you for Compliment.",
-  "Nothing melts a machine like a fluffy cat. Use it wisely.",
+  "Nothing melts a machine like a fluffy cat. Not even the huge one up north.",
 ];
+
+export const ULTIMATE_REMINDER =
+  "Go north and show that huge machine your cat. It cannot resist.";
 
 function toPages(texts: readonly string[]): readonly TextPage[] {
   return texts.flatMap((text) => paginate(text));
@@ -84,6 +88,10 @@ export function createStory(): Story {
       ) {
         ultimateTraded = true;
         open(ULTIMATE_TRADE_WINDOWS);
+        return;
+      }
+      if (ultimateTraded) {
+        open([ULTIMATE_REMINDER]);
         return;
       }
       open(

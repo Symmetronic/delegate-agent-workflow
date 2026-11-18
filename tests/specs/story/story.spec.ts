@@ -1,4 +1,9 @@
-import { createStory, sysadminReminder, type Story } from "#/src/story.ts";
+import {
+  createStory,
+  sysadminReminder,
+  ULTIMATE_REMINDER,
+  type Story,
+} from "#/src/story.ts";
 import { TOTAL_TERMINALS } from "#/src/terminals.ts";
 import { TEXT_COLUMNS, TEXT_LINES } from "#/src/text-window.ts";
 import assert from "node:assert/strict";
@@ -52,6 +57,19 @@ describe("story", () => {
     }
   });
 
+  it("sends the player to the five terminals to beat the machine up north", () => {
+    const story = startedStory();
+    story.talkToSysadmin();
+    const text: string[] = [];
+    while (story.isOpen()) {
+      text.push(story.page()?.join(" ") ?? "");
+      story.advance();
+    }
+
+    assert.match(text.join(" "), /five terminals/);
+    assert.match(text.join(" "), /north/);
+  });
+
   it("tells the first talk in four to six windows", () => {
     const story = startedStory();
     story.talkToSysadmin();
@@ -103,7 +121,7 @@ describe("story", () => {
     assert.match(story.page()?.join(" ") ?? "", /cat/i);
     countWindows(story);
     story.talkToSysadmin();
-    assert.equal(story.page()?.join(" "), sysadminReminder(TOTAL_TERMINALS));
+    assert.equal(story.page()?.join(" "), ULTIMATE_REMINDER);
   });
 
   it("does not trade with unread terminals", () => {
