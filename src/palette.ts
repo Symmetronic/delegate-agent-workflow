@@ -31,6 +31,7 @@ export const PALETTES = {
   terminal: ["#d0ffc8", "#48c060", "#707880", "#202428"],
   toaster: ["#f8f8f8", "#f8a040", "#a8a8b8", "#383848"],
   printer: ["#f8f8f8", "#80c0f0", "#c8c8c0", "#404048"],
+  mainframe: ["#d0d8e8", "#ff3030", "#4c5468", "#141820"],
   vacuum: ["#f8f8f8", "#f0d040", "#d04848", "#402020"],
 } as const satisfies Readonly<Record<string, Palette>>;
 

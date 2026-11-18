@@ -163,3 +163,10 @@ export const PROPS: readonly Prop[] = [
 ];
 
 export const SIGN_TILE: TilePosition = { column: 19, row: 3 };
+
+export const MAINFRAME_FOOTPRINT: readonly TilePosition[] = [
+  { column: 19, row: 17 },
+  { column: 20, row: 17 },
+  { column: 19, row: 18 },
+  { column: 20, row: 18 },
+];

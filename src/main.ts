@@ -13,7 +13,7 @@ import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
 import { createGrass, type GrassFrame } from "#/src/grass.ts";
 import { pickInteraction, type Footprint } from "#/src/interaction.ts";
-import type { MachineKind } from "#/src/machines.ts";
+import { MAINFRAME, type MachineKind } from "#/src/machines.ts";
 import {
   createPlayer,
   isWalkableTile,
@@ -28,6 +28,7 @@ import {
   BUBBLE_SPRITE,
   CREATURE_SPRITES,
   GRASS_SPRITES,
+  MAINFRAME_SPRITE,
   mirror,
   PLAYER_SPRITES,
   PRINTER_SPRITE,
@@ -48,6 +49,7 @@ import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
   isCableGrass,
   isSameTile,
+  MAINFRAME_FOOTPRINT,
   PLAYER_START,
   PROPS,
   SIGN_TILE,
@@ -152,6 +154,7 @@ const machineImages: Readonly<Record<MachineKind, HTMLCanvasElement>> = {
   toaster: bakeSprite(TOASTER_SPRITE, "toaster"),
   printer: bakeSprite(PRINTER_SPRITE, "printer"),
   vacuum: bakeSprite(VACUUM_SPRITE, "vacuum"),
+  mainframe: bakeSprite(MAINFRAME_SPRITE, "mainframe"),
 };
 
 const BATTLE_DIRECTION_BY_KEY: Readonly<Record<string, Direction>> = {
@@ -207,6 +210,8 @@ const grass = createGrass();
 const encounterTrigger = createEncounterTrigger(Math.random);
 let player = createPlayer(PLAYER_START);
 let battle: Battle | null = null;
+let battleIsAgainstMainframe = false;
+let mainframeDefeated = false;
 let playerHp: number | null = null;
 let lastTile = tileKey();
 let creatures: readonly Creature[] = CREATURE_HOMES.map(({ kind, home }) =>
@@ -242,6 +247,9 @@ const FIXED_INTERACTABLES: readonly Interactable[] = [
 function interactables(): readonly Interactable[] {
   return [
     ...FIXED_INTERACTABLES,
+    ...(mainframeDefeated
+      ? []
+      : [{ footprint: MAINFRAME_FOOTPRINT, interact: challengeMainframe }]),
     ...creatures.map((creature) => ({
       footprint: occupiedTiles(creature),
       interact: () => {
@@ -308,7 +316,22 @@ function endBattleWhenFinished(): void {
     return;
   }
   playerHp = battle.playerHp();
+  if (battleIsAgainstMainframe && battle.outcome() === "won") {
+    mainframeDefeated = true;
+  }
   battle = null;
+  battleIsAgainstMainframe = false;
+}
+
+function challengeMainframe(): void {
+  battle = createBattle(
+    Math.random,
+    playerHp ?? undefined,
+    story.hasUltimate(),
+    MAINFRAME,
+  );
+  battleIsAgainstMainframe = true;
+  audio.play("encounter");
 }
 
 function cameraOrigin(): Point {
@@ -439,6 +462,16 @@ function draw(timestamp: number): void {
     SYSADMIN_POSITION.x - camera.x,
     SYSADMIN_POSITION.y - camera.y,
   );
+  if (!mainframeDefeated) {
+    const [corner] = MAINFRAME_FOOTPRINT;
+    if (corner !== undefined) {
+      context.drawImage(
+        machineImages.mainframe,
+        corner.column * TILE_SIZE - camera.x,
+        corner.row * TILE_SIZE - camera.y,
+      );
+    }
+  }
   context.drawImage(
     signImage,
     SIGN_TILE.column * TILE_SIZE - camera.x,

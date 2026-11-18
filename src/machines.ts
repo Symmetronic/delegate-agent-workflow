@@ -1,4 +1,4 @@
-export type MachineKind = "toaster" | "printer" | "vacuum";
+export type MachineKind = "toaster" | "printer" | "vacuum" | "mainframe";
 
 export interface Machine {
   readonly kind: MachineKind;
@@ -9,6 +9,11 @@ export interface Machine {
   readonly counterAttack: string;
   readonly selfDestruct: readonly string[];
   readonly conversion: string;
+  readonly announcement?: string;
+  readonly onlyFallsForTheCat?: {
+    readonly shrugOff: string;
+    readonly hint: string;
+  };
 }
 
 export const MACHINES: readonly [Machine, ...Machine[]] = [
@@ -54,3 +59,20 @@ export const MACHINES: readonly [Machine, ...Machine[]] = [
       "It reboots as a Friendly Vacuum and tidies your shoes without being asked.",
   },
 ];
+
+export const MAINFRAME: Machine = {
+  kind: "mainframe",
+  name: "Mainframe of Doubt",
+  maxHp: 99,
+  minDamage: 4,
+  maxDamage: 6,
+  counterAttack: "The Mainframe of Doubt buries you in error messages.",
+  selfDestruct: [],
+  conversion:
+    "It reboots as a Friendly Mainframe and rolls aside. The way north is open!",
+  announcement: "The Mainframe of Doubt blocks the way north!",
+  onlyFallsForTheCat: {
+    shrugOff: "It has already considered that question.",
+    hint: "It booms: Only something truly meaningless could stop me.",
+  },
+};

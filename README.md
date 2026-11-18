@@ -16,7 +16,7 @@ A prototype to find out how well a Game Boy style game plays on a phone. The mac
 
 ### How it is played
 
-Drag anywhere on the screen to walk tile by tile; stand next to the last sysadmin or a terminal and tap it to talk or read. Arrow keys or WASD walk, Enter confirms. A three-eyed crow, a glowing rat and a survivor wander the wasteland and have something to say. North, through a gap in a wall of rocket wreckage, lies a flooded data center (only sketched so far). Walking in the cable grass triggers fights against three machine types; pick one of four attacks in the two-by-two grid. Winning converts the machine into something friendly, losing is a coffee break. The sysadmin sends you to read the five terminals; come back to him and he trades the weakest attack for the ultimate one, "Show it a picture of a cat".
+Drag anywhere on the screen to walk tile by tile; stand next to the last sysadmin or a terminal and tap it to talk or read. Arrow keys or WASD walk, Enter confirms. A three-eyed crow, a glowing rat and a survivor wander the wasteland and have something to say. North, through a gap in a wall of rocket wreckage, lies a flooded data center (only sketched so far). Walking in the cable grass triggers fights against three machine types; pick one of four attacks in the two-by-two grid. Winning converts the machine into something friendly, losing is a coffee break. The sysadmin sends you to read the five terminals; come back to him and he trades the weakest attack for the ultimate one, "Show it a picture of a cat". It is the only thing that beats the Mainframe of Doubt, which stands in the gap to the north.
 
 ### What is deliberately not in it
 

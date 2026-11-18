@@ -10,7 +10,7 @@ import {
 } from "#/src/battle.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, LINE_HEIGHT } from "#/src/font.ts";
-import { MACHINES } from "#/src/machines.ts";
+import { MACHINES, MAINFRAME } from "#/src/machines.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -31,6 +31,7 @@ const LOW_PLAYER_HP = 5;
 const EXISTENTIAL_QUESTION = 0;
 const AWKWARD_PAUSE = 2;
 const COMPLIMENT = 3;
+const MAX_MAINFRAME_ROUNDS = 4;
 
 function scripted(rolls: readonly number[], fallback: number): () => number {
   let index = 0;
@@ -352,5 +353,59 @@ describe("battle layout", () => {
 
     assert.equal(battle.outcome(), "won");
     assert.match(pages(battle).join(" "), /fluffy/);
+  });
+});
+
+describe("mainframe battle", () => {
+  function mainframeBattle(hasUltimate: boolean, roll = HALF): Battle {
+    const battle = createBattle(
+      () => roll,
+      PLAYER_MAX_HP,
+      hasUltimate,
+      MAINFRAME,
+    );
+    skipMessages(battle);
+    return battle;
+  }
+
+  it("announces that the mainframe blocks the way", () => {
+    const battle = createBattle(() => HALF, PLAYER_MAX_HP, false, MAINFRAME);
+
+    assert.match(battle.page()?.join(" ") ?? "", /blocks the way north/);
+    assert.equal(battle.machineKind(), "mainframe");
+  });
+
+  it("shrugs off every normal attack and never self-destructs", () => {
+    for (let attack = 0; attack < ATTACK_COUNT; attack += 1) {
+      const battle = mainframeBattle(false, 0);
+      battle.choose(attack);
+
+      assert.equal(battle.machineHp(), battle.machineMaxHp());
+      assert.ok(!battle.selfDestructed());
+      assert.match(pages(battle).join(" "), /already considered/);
+    }
+  });
+
+  it("knocks the player out within four rounds and hints at the weakness", () => {
+    const battle = mainframeBattle(false, 0);
+    const texts: string[] = [];
+    let rounds = 0;
+    while (battle.phase() === "choosing") {
+      battle.choose(AWKWARD_PAUSE);
+      rounds += 1;
+      texts.push(...pages(battle));
+    }
+
+    assert.equal(battle.outcome(), "lost");
+    assert.ok(rounds <= MAX_MAINFRAME_ROUNDS);
+    assert.match(texts.join(" "), /truly meaningless/);
+  });
+
+  it("falls for one picture of a cat", () => {
+    const battle = mainframeBattle(true);
+    battle.choose(COMPLIMENT);
+
+    assert.equal(battle.outcome(), "won");
+    assert.match(pages(battle).join(" "), /Friendly Mainframe/);
   });
 });

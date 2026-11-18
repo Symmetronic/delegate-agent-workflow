@@ -141,15 +141,18 @@ export function createBattle(
   random: Random,
   startingPlayerHp: number = PLAYER_MAX_HP,
   hasUltimate = false,
+  opponent?: Machine,
 ): Battle {
   const attacks = attacksFor(hasUltimate);
-  const machine = drawMachine(random);
+  const machine = opponent ?? drawMachine(random);
   let playerHp = startingPlayerHp;
   let machineHp = machine.maxHp;
   let selected = 0;
   let outcome: BattleOutcome | null = null;
   let selfDestructed = false;
-  let pages: readonly TextPage[] = paginate(`A ${machine.name} appears!`);
+  let pages: readonly TextPage[] = paginate(
+    machine.announcement ?? `A ${machine.name} appears!`,
+  );
   let pageIndex = 0;
   let phase: BattlePhase = "message";
 
@@ -159,7 +162,38 @@ export function createBattle(
     phase = "message";
   }
 
+  function counterAttack(texts: string[]): void {
+    playerHp = Math.max(
+      0,
+      playerHp - rollDamage(random, machine.minDamage, machine.maxDamage),
+    );
+    texts.push(machine.counterAttack);
+    if (playerHp === 0) {
+      outcome = "lost";
+      playerHp = PLAYER_MAX_HP;
+      texts.push(
+        "You faint. A coffee break restores your HP.",
+        ...(machine.onlyFallsForTheCat === undefined
+          ? []
+          : [machine.onlyFallsForTheCat.hint]),
+      );
+    }
+  }
+
+  function shrugOff(attack: Attack, shrug: string): void {
+    const texts = [attack.message, shrug];
+    counterAttack(texts);
+    showMessages(texts);
+  }
+
   function playRound(attackIndex: number, attack: Attack): void {
+    if (
+      machine.onlyFallsForTheCat !== undefined &&
+      attack !== ULTIMATE_ATTACK
+    ) {
+      shrugOff(attack, machine.onlyFallsForTheCat.shrugOff);
+      return;
+    }
     const texts = [attack.message];
     machineHp = Math.max(
       0,
@@ -181,16 +215,7 @@ export function createBattle(
       outcome = "won";
       texts.push(...machine.selfDestruct, machine.conversion);
     } else if (!attack.stunsMachine) {
-      playerHp = Math.max(
-        0,
-        playerHp - rollDamage(random, machine.minDamage, machine.maxDamage),
-      );
-      texts.push(machine.counterAttack);
-      if (playerHp === 0) {
-        outcome = "lost";
-        playerHp = PLAYER_MAX_HP;
-        texts.push("You faint. A coffee break restores your HP.");
-      }
+      counterAttack(texts);
     }
     showMessages(texts);
   }

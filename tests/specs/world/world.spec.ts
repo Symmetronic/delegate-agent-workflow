@@ -2,6 +2,7 @@ import {
   isCableGrass,
   isSameTile,
   isWalkable,
+  MAINFRAME_FOOTPRINT,
   PLAYER_START,
   PROPS,
   SIGN_TILE,
@@ -63,8 +64,10 @@ function neighborsOf(tile: TilePosition): TilePosition[] {
   ];
 }
 
-function reachableFromStart(): Set<string> {
-  const occupied = [SYSADMIN_TILE, SIGN_TILE, ...TERMINAL_TILES];
+function reachableFromStart(
+  blockers: readonly TilePosition[] = [],
+): Set<string> {
+  const occupied = [SYSADMIN_TILE, SIGN_TILE, ...TERMINAL_TILES, ...blockers];
   const reachable = new Set([keyOf(PLAYER_START)]);
   const queue = [PLAYER_START];
   for (let tile = queue.shift(); tile !== undefined; tile = queue.shift()) {
@@ -123,6 +126,26 @@ describe("world", () => {
     assert.equal(covered.length, wrecks.length);
     assert.ok(
       wrecks.every((wreck) => covered.some((tile) => isSameTile(tile, wreck))),
+    );
+  });
+
+  it("lets only the mainframe block the way to the north", () => {
+    const blocked = reachableFromStart(MAINFRAME_FOOTPRINT);
+    const open = reachableFromStart();
+    const reachesSign = (reachable: Set<string>): boolean =>
+      neighborsOf(SIGN_TILE).some((tile) => reachable.has(keyOf(tile)));
+
+    assert.ok(!reachesSign(blocked));
+    assert.ok(reachesSign(open));
+    assert.ok(
+      [SYSADMIN_TILE, ...TERMINAL_TILES].every((target) =>
+        neighborsOf(target).some((tile) => blocked.has(keyOf(tile))),
+      ),
+    );
+    assert.ok(
+      MAINFRAME_FOOTPRINT.some((part) =>
+        neighborsOf(part).some((tile) => blocked.has(keyOf(tile))),
+      ),
     );
   });
 

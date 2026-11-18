@@ -1,7 +1,7 @@
 import { ATTACKS, PLAYER_MAX_HP, ULTIMATE_ATTACK } from "#/src/battle.ts";
 import { GLYPH_SPRITES } from "#/src/font.ts";
 
-import { MACHINES } from "#/src/machines.ts";
+import { MACHINES, MAINFRAME } from "#/src/machines.ts";
 import {
   CREATURE_REMARKS,
   SIGN_TEXT,
@@ -35,11 +35,14 @@ describe("font", () => {
         attack.message,
         ...(attack.winMessages ?? []),
       ]),
-      ...MACHINES.flatMap((machine) => [
+      ...[...MACHINES, MAINFRAME].flatMap((machine) => [
         machine.name,
         machine.counterAttack,
         machine.conversion,
         ...machine.selfDestruct,
+        machine.announcement ?? "",
+        machine.onlyFallsForTheCat?.shrugOff ?? "",
+        machine.onlyFallsForTheCat?.hint ?? "",
       ]),
     ];
 
