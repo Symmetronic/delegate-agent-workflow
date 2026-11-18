@@ -19,6 +19,8 @@ import {
   BUBBLE_SPRITE,
   PLAYER_SPRITES,
   PRINTER_SPRITE,
+  PROP_PALETTES,
+  PROP_SPRITES,
   SYSADMIN_SPRITE,
   TERMINAL_SPRITE,
   TILE_PALETTES,
@@ -33,12 +35,14 @@ import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
   isSameTile,
   PLAYER_START,
+  PROPS,
   SYSADMIN_TILE,
   TERMINAL_TILES,
   TILE_SIZE,
   tileAt,
   WORLD_COLUMNS,
   WORLD_ROWS,
+  type PropKind,
   type TileKind,
   type TilePosition,
 } from "#/src/world.ts";
@@ -55,19 +59,32 @@ if (context === null) {
 canvas.width = LOGICAL_SIZE.width;
 canvas.height = LOGICAL_SIZE.height;
 
-function bakeTile(kind: TileKind): HTMLCanvasElement {
-  return bakeSprite(TILE_SPRITES[kind], TILE_PALETTES[kind]);
+function bakeTile(kind: TileKind): readonly HTMLCanvasElement[] {
+  return TILE_PALETTES[kind].map((palette) =>
+    bakeSprite(TILE_SPRITES[kind], palette),
+  );
 }
 
 function bakePlayer(rows: SpriteRows): HTMLCanvasElement {
   return bakeSprite(rows, "player");
 }
 
-const tileImages: Record<TileKind, HTMLCanvasElement> = {
-  ground: bakeTile("ground"),
-  "cable-grass": bakeTile("cable-grass"),
-  obstacle: bakeTile("obstacle"),
-  "floor-mat": bakeTile("floor-mat"),
+const tileImageCache = new Map<TileKind, readonly HTMLCanvasElement[]>();
+function tileImages(kind: TileKind): readonly HTMLCanvasElement[] {
+  const cached = tileImageCache.get(kind);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const baked = bakeTile(kind);
+  tileImageCache.set(kind, baked);
+  return baked;
+}
+const propImages: Readonly<Record<PropKind, HTMLCanvasElement>> = {
+  rocket: bakeSprite(PROP_SPRITES.rocket, PROP_PALETTES.rocket),
+  "rocket-tail": bakeSprite(
+    PROP_SPRITES["rocket-tail"],
+    PROP_PALETTES["rocket-tail"],
+  ),
 };
 const playerImages: Record<Direction, readonly HTMLCanvasElement[]> = {
   down: PLAYER_SPRITES.down.map(bakePlayer),
@@ -111,6 +128,7 @@ const WINDOW_PADDING = 4;
 const WINDOW_HEIGHT = 44;
 const MORE_MARKER_SIZE = 3;
 const BUBBLE_BOB_MILLISECONDS = 350;
+const GLOW_MILLISECONDS = 600;
 const BUBBLE_HEIGHT = 8;
 const TWO_FINGERS = 2;
 const HALF = 2;
@@ -278,12 +296,24 @@ function draw(timestamp: number): void {
   const lastRow = Math.ceil((camera.y + LOGICAL_SIZE.height) / TILE_SIZE);
   for (let row = firstRow; row < lastRow; row += 1) {
     for (let column = firstColumn; column < lastColumn; column += 1) {
-      context.drawImage(
-        tileImages[tileAt(column, row)],
-        column * TILE_SIZE - camera.x,
-        row * TILE_SIZE - camera.y,
-      );
+      const frames = tileImages(tileAt(column, row));
+      const image =
+        frames[Math.floor(timestamp / GLOW_MILLISECONDS) % frames.length];
+      if (image !== undefined) {
+        context.drawImage(
+          image,
+          column * TILE_SIZE - camera.x,
+          row * TILE_SIZE - camera.y,
+        );
+      }
     }
+  }
+  for (const prop of PROPS) {
+    context.drawImage(
+      propImages[prop.kind],
+      prop.tile.column * TILE_SIZE - camera.x,
+      prop.tile.row * TILE_SIZE - camera.y,
+    );
   }
   for (const position of TERMINAL_POSITIONS) {
     context.drawImage(
