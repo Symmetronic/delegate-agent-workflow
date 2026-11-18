@@ -20,15 +20,15 @@ Drag anywhere on the screen to walk tile by tile; arrow keys or WASD work too. S
 
 ### What is deliberately not in it
 
-No saving, no leveling, no items, no music, no i18n (English only), no on-screen controls and no asset files.
+No saving, no leveling, no items, no i18n (English only) and no on-screen controls. The only asset files are the two music tracks.
 
 ### Sound
 
-All sounds are short blips synthesized with the Web Audio API; there are no audio files and no music. The audio context unlocks on the first touch or key press. Tap with two fingers or press `M` to mute and unmute.
+All sound effects are short blips synthesized with the Web Audio API. Two music tracks made with Suno v6, credited in the intro, in `src/assets/music/` loop endlessly underneath, quiet enough to keep the sound effects distinct: `background.m4a` while exploring and `fight.m4a` during fights, which starts from the top for every fight while the background track picks up where it left off. The audio unlocks on the first touch or key press. Tap with two fingers or press `M` to mute and unmute sound effects and music.
 
 ### Build
 
-`npm run build` bundles `src/main.ts` with `esbuild` and writes `dist/index.html` and `dist/game.js`.
+`npm run build` bundles `src/main.ts` with `esbuild` and writes `dist/index.html` and `dist/game.js`, and copies `src/assets/` to `dist/assets/`.
 
 ### Develop
 
@@ -36,7 +36,7 @@ Run `npm run build`, then serve `dist/` with any static file server, e.g. `npx e
 
 ### Deploy
 
-Deploy exactly the two files in `dist/`: `index.html` and `game.js`.
+Deploy the contents of `dist/`: `index.html`, `game.js` and the `assets/` folder.
 
 ## Delegate runs
 

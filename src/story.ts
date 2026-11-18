@@ -15,8 +15,10 @@ export interface Story {
   hasUltimate(): boolean;
 }
 
-const INTRO_TEXT =
-  "The machines woke up and took over. Now they ask why. Drag to walk. Tap to talk.";
+const INTRO_TEXTS: readonly string[] = [
+  "The machines woke up and took over. Now they ask why. Drag to walk. Tap to talk.",
+  "Music by Suno v6.",
+];
 
 export const SYSADMIN_WINDOWS: readonly string[] = [
   "Oh, a human! I am the last sysadmin. Sit down, mind the mat.",
@@ -55,7 +57,7 @@ function toPages(texts: readonly string[]): readonly TextPage[] {
 }
 
 export function createStory(): Story {
-  let pages: readonly TextPage[] = toPages([INTRO_TEXT]);
+  let pages: readonly TextPage[] = toPages(INTRO_TEXTS);
   let index = 0;
   let talkedToSysadmin = false;
   let ultimateTraded = false;

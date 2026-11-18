@@ -1,4 +1,4 @@
-import { createAudio } from "#/src/audio.ts";
+import { createAudio, type MusicTrack } from "#/src/audio.ts";
 import { ATTACK_CELLS, attackAt, attackLabel } from "#/src/battle-layout.ts";
 import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
@@ -201,8 +201,19 @@ const TERMINAL_POSITIONS = TERMINAL_TILES.map((tile) => ({
   y: tile.row * TILE_SIZE,
 }));
 
-const audio = createAudio(() =>
-  typeof AudioContext === "undefined" ? null : new AudioContext(),
+const MUSIC_URLS: Readonly<Record<MusicTrack, string>> = {
+  background: "assets/music/background.m4a",
+  fight: "assets/music/fight.m4a",
+};
+
+const audio = createAudio(
+  () => (typeof AudioContext === "undefined" ? null : new AudioContext()),
+  (track) => {
+    const element = document.createElement("audio");
+    element.preload = "auto";
+    element.src = MUSIC_URLS[track];
+    return element;
+  },
 );
 const story = createStory();
 const walkInput = createWalkInput();
@@ -307,6 +318,7 @@ function startBattleOnEncounter(): void {
       playerHp ?? undefined,
       story.hasUltimate(),
     );
+    audio.playMusic("fight");
     audio.play("encounter");
   }
 }
@@ -321,6 +333,7 @@ function endBattleWhenFinished(): void {
   }
   battle = null;
   battleIsAgainstMainframe = false;
+  audio.playMusic("background");
 }
 
 function challengeMainframe(): void {
@@ -331,6 +344,7 @@ function challengeMainframe(): void {
     MAINFRAME,
   );
   battleIsAgainstMainframe = true;
+  audio.playMusic("fight");
   audio.play("encounter");
 }
 

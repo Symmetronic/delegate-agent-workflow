@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { copyFile, mkdir, rm } from "node:fs/promises";
+import { copyFile, cp, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 const ARGUMENT_INDEX = 2;
@@ -18,3 +18,6 @@ await build({
   logLevel: "warning",
 });
 await copyFile("src/index.html", path.join(outputDirectory, "index.html"));
+await cp("src/assets", path.join(outputDirectory, "assets"), {
+  recursive: true,
+});

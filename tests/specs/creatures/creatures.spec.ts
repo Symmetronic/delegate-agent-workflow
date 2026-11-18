@@ -133,7 +133,9 @@ describe("creatures", () => {
 
   it("each have a remark when talked to", () => {
     const story = createStory();
-    story.advance();
+    while (story.isOpen()) {
+      story.advance();
+    }
     for (const { kind } of CREATURE_HOMES) {
       story.talkToCreature(kind);
       assert.ok(

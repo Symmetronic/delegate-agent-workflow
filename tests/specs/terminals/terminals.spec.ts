@@ -82,7 +82,9 @@ describe("terminals", () => {
 describe("story terminals", () => {
   it("shows the read count and then the already read text", () => {
     const story = createStory();
-    story.advance();
+    while (story.isOpen()) {
+      story.advance();
+    }
     story.readTerminal(FOURTH);
 
     assert.match(story.page()?.join(" ") ?? "", /^Terminal 1 of 5\./);
@@ -97,7 +99,9 @@ describe("story terminals", () => {
 
   it("lets the sysadmin report the count", () => {
     const story = createStory();
-    story.advance();
+    while (story.isOpen()) {
+      story.advance();
+    }
     story.talkToSysadmin();
     while (story.isOpen()) {
       story.advance();

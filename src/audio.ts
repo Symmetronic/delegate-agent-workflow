@@ -1,9 +1,12 @@
 export type SoundCue =
   "footstep" | "select" | "hit" | "encounter" | "self-destruct";
 
+export type MusicTrack = "background" | "fight";
+
 export interface Audio {
   unlock(): void;
   play(cue: SoundCue): void;
+  playMusic(track: MusicTrack): void;
   isMuted(): boolean;
   toggleMute(): void;
 }
@@ -28,6 +31,14 @@ export interface GainLike extends AudioNodeLike {
   gain: AudioParamLike;
 }
 
+export interface MusicElementLike {
+  loop: boolean;
+  currentTime: number;
+  readonly paused: boolean;
+  play(): Promise<void>;
+  pause(): void;
+}
+
 export interface AudioContextLike {
   readonly currentTime: number;
   readonly destination: unknown;
@@ -35,6 +46,7 @@ export interface AudioContextLike {
   resume(): Promise<void>;
   createOscillator(): OscillatorLike;
   createGain(): GainLike;
+  createMediaElementSource(element: MusicElementLike): AudioNodeLike;
 }
 
 interface Blip {
@@ -46,6 +58,9 @@ interface Blip {
 }
 
 const VOLUME = 0.08;
+// Routed through a gain node because iOS ignores HTMLMediaElement.volume.
+const MUSIC_VOLUME = 0.12;
+const MUSIC_TRACKS: readonly MusicTrack[] = ["background", "fight"];
 const SILENT = 0.0001;
 
 export const BLIPS: Readonly<Record<SoundCue, readonly Blip[]>> = {
@@ -142,12 +157,32 @@ function playBlips(context: AudioContextLike, blips: readonly Blip[]): void {
   }
 }
 
+function connectMusic(
+  context: AudioContextLike,
+  createMusicElement: (track: MusicTrack) => MusicElementLike,
+): Readonly<Record<MusicTrack, MusicElementLike>> {
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(MUSIC_VOLUME, context.currentTime);
+  gain.connect(context.destination);
+  function connect(track: MusicTrack): MusicElementLike {
+    const element = createMusicElement(track);
+    element.loop = true;
+    context.createMediaElementSource(element).connect(gain);
+    return element;
+  }
+  return { background: connect("background"), fight: connect("fight") };
+}
+
 export function createAudio(
   createContext: () => AudioContextLike | null,
+  createMusicElement: (track: MusicTrack) => MusicElementLike,
 ): Audio {
   let context: AudioContextLike | null = null;
   let failed = false;
   let muted = false;
+  let track: MusicTrack = "background";
+  let music: Readonly<Record<MusicTrack, MusicElementLike>> | null = null;
+  let musicFailed = false;
 
   function ensureContext(): AudioContextLike | null {
     if (context === null && !failed) {
@@ -174,6 +209,25 @@ export function createAudio(
     }
   }
 
+  function syncMusic(): void {
+    if (context === null || musicFailed) {
+      return;
+    }
+    try {
+      music ??= connectMusic(context, createMusicElement);
+      for (const candidate of MUSIC_TRACKS) {
+        const element = music[candidate];
+        if (candidate !== track || muted) {
+          element.pause();
+        } else if (element.paused) {
+          element.play().catch(() => undefined);
+        }
+      }
+    } catch {
+      musicFailed = true;
+    }
+  }
+
   return {
     unlock() {
       attempt((ready) => {
@@ -183,6 +237,7 @@ export function createAudio(
           });
         }
       });
+      syncMusic();
     },
     play(cue) {
       if (muted || context === null) {
@@ -192,9 +247,20 @@ export function createAudio(
         playBlips(ready, BLIPS[cue]);
       });
     },
+    playMusic(next) {
+      if (next === track) {
+        return;
+      }
+      track = next;
+      if (music !== null && next === "fight") {
+        music.fight.currentTime = 0;
+      }
+      syncMusic();
+    },
     isMuted: () => muted,
     toggleMute() {
       muted = !muted;
+      syncMusic();
     },
   };
 }

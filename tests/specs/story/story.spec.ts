@@ -23,7 +23,7 @@ function countWindows(story: Story): number {
 
 function startedStory(): Story {
   const story = createStory();
-  story.advance();
+  countWindows(story);
   return story;
 }
 
@@ -33,6 +33,17 @@ describe("story", () => {
 
     assert.ok(story.isOpen());
     assert.match(story.page()?.join(" ") ?? "", /Drag to walk\. Tap to talk\./);
+  });
+
+  it("credits the music in the intro", () => {
+    const story = createStory();
+    const text: string[] = [];
+    while (story.isOpen()) {
+      text.push(story.page()?.join(" ") ?? "");
+      story.advance();
+    }
+
+    assert.match(text.join(" "), /Music by Suno v6\./);
   });
 
   it("closes the intro without talking to the sysadmin", () => {
