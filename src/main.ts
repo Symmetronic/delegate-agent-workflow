@@ -1,4 +1,7 @@
+import { ATTACK_CELLS, attackAt } from "#/src/battle-layout.ts";
+import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
+import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
 import { createPlayer, walk } from "#/src/movement.ts";
 import { PALETTE } from "#/src/palette.ts";
@@ -6,12 +9,14 @@ import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
   bakeSprite,
   BUBBLE_SPRITE,
+  MACHINE_SPRITE,
   PLAYER_SPRITES,
   SYSADMIN_SPRITE,
   TERMINAL_SPRITE,
   TILE_SPRITES,
 } from "#/src/sprites.ts";
 import { createStory } from "#/src/story.ts";
+import type { TextPage } from "#/src/text-window.ts";
 import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
   LOG_TILES,
@@ -58,7 +63,24 @@ const glyphImages = new Map(
 const sysadminImage = bakeSprite(SYSADMIN_SPRITE);
 const bubbleImage = bakeSprite(BUBBLE_SPRITE);
 const terminalImage = bakeSprite(TERMINAL_SPRITE);
+const machineImage = bakeSprite(MACHINE_SPRITE);
 
+const BATTLE_DIRECTION_BY_KEY: Readonly<Record<string, Direction>> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+};
+const MACHINE_LABEL = { x: 6, y: 6 };
+const MACHINE_BAR = { x: 6, y: 16 };
+const MACHINE_IMAGE = { x: 120, y: 8 };
+const PLAYER_LABEL = { x: 90, y: 54 };
+const PLAYER_BAR = { x: 90, y: 64 };
+const PLAYER_HP_TEXT = { x: 90, y: 72 };
+const CELL_BORDER = 1;
+const CELL_TEXT_OFFSET = { x: 6, y: 9 };
+const BAR_WIDTH = 50;
+const BAR_HEIGHT = 5;
 const WINDOW_MARGIN = 4;
 const WINDOW_PADDING = 4;
 const WINDOW_HEIGHT = 44;
@@ -87,7 +109,43 @@ const LOG_POSITIONS = LOG_TILES.map((tile) => ({
 
 const story = createStory();
 const walkInput = createWalkInput();
+const encounterTrigger = createEncounterTrigger(Math.random);
 let player = createPlayer(PLAYER_START);
+let battle: Battle | null = null;
+let playerHp: number | null = null;
+let lastTile = tileKey();
+
+function tileKey(): string {
+  const column = Math.floor((player.x + PLAYER_CENTER_OFFSET) / TILE_SIZE);
+  const row = Math.floor((player.y + PLAYER_CENTER_OFFSET) / TILE_SIZE);
+  return `${String(column)},${String(row)}`;
+}
+
+function currentTileKind(): TileKind {
+  return tileAt(
+    Math.floor((player.x + PLAYER_CENTER_OFFSET) / TILE_SIZE),
+    Math.floor((player.y + PLAYER_CENTER_OFFSET) / TILE_SIZE),
+  );
+}
+
+function startBattleOnEncounter(): void {
+  const key = tileKey();
+  if (key === lastTile) {
+    return;
+  }
+  lastTile = key;
+  if (encounterTrigger.stepOnto(currentTileKind())) {
+    battle = createBattle(Math.random, playerHp ?? undefined);
+  }
+}
+
+function endBattleWhenFinished(): void {
+  if (battle?.phase() !== "finished") {
+    return;
+  }
+  playerHp = battle.playerHp();
+  battle = null;
+}
 
 function drawText(line: string, x: number, y: number): void {
   if (context === null) {
@@ -103,8 +161,7 @@ function drawText(line: string, x: number, y: number): void {
   }
 }
 
-function drawTextWindow(): void {
-  const page = story.page();
+function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
   if (context === null || page === null) {
     return;
   }
@@ -126,7 +183,7 @@ function drawTextWindow(): void {
       top + WINDOW_PADDING + index * LINE_HEIGHT,
     );
   });
-  if (story.hasMorePages()) {
+  if (hasMore) {
     context.fillStyle = PALETTE.darkest;
     context.fillRect(
       WINDOW_MARGIN + width - WINDOW_PADDING - MORE_MARKER_SIZE,
@@ -194,7 +251,69 @@ function draw(timestamp: number): void {
       Math.round(player.y) - camera.y,
     );
   }
-  drawTextWindow();
+  drawTextWindow(story.page(), story.hasMorePages());
+}
+
+function drawBar(x: number, y: number, current: number, max: number): void {
+  if (context === null) {
+    return;
+  }
+  context.fillStyle = PALETTE.darkest;
+  context.fillRect(x, y, BAR_WIDTH + (1 + 1), BAR_HEIGHT);
+  context.fillStyle = PALETTE.lightest;
+  context.fillRect(x + 1, y + 1, BAR_WIDTH, BAR_HEIGHT - (1 + 1));
+  context.fillStyle = PALETTE.dark;
+  context.fillRect(
+    x + 1,
+    y + 1,
+    Math.ceil((BAR_WIDTH * current) / max),
+    BAR_HEIGHT - (1 + 1),
+  );
+}
+
+function drawBattle(active: Battle): void {
+  if (context === null) {
+    return;
+  }
+  context.fillStyle = PALETTE.lightest;
+  context.fillRect(0, 0, LOGICAL_SIZE.width, LOGICAL_SIZE.height);
+  drawText(active.machineName(), MACHINE_LABEL.x, MACHINE_LABEL.y);
+  drawBar(
+    MACHINE_BAR.x,
+    MACHINE_BAR.y,
+    active.machineHp(),
+    active.machineMaxHp(),
+  );
+  context.drawImage(machineImage, MACHINE_IMAGE.x, MACHINE_IMAGE.y);
+  drawText("You", PLAYER_LABEL.x, PLAYER_LABEL.y);
+  drawBar(PLAYER_BAR.x, PLAYER_BAR.y, active.playerHp(), active.playerMaxHp());
+  drawText(
+    `${String(active.playerHp())}/${String(active.playerMaxHp())}`,
+    PLAYER_HP_TEXT.x,
+    PLAYER_HP_TEXT.y,
+  );
+  if (active.phase() === "message") {
+    drawTextWindow(active.page(), active.hasMorePages());
+    return;
+  }
+  const names = active.attackNames();
+  ATTACK_CELLS.forEach((cell, index) => {
+    context.fillStyle = PALETTE.darkest;
+    context.fillRect(cell.x, cell.y, cell.width, cell.height);
+    context.fillStyle =
+      index === active.selected() ? PALETTE.light : PALETTE.lightest;
+    context.fillRect(
+      cell.x + CELL_BORDER,
+      cell.y + CELL_BORDER,
+      cell.width - CELL_BORDER * (1 + 1),
+      cell.height - CELL_BORDER * (1 + 1),
+    );
+    drawText(
+      names[index] ?? "",
+      cell.x + CELL_TEXT_OFFSET.x,
+      cell.y + CELL_TEXT_OFFSET.y,
+    );
+  });
 }
 
 let previousTimestamp: number | null = null;
@@ -204,8 +323,19 @@ function tick(timestamp: number): void {
       ? 0
       : Math.min(timestamp - previousTimestamp, MAX_FRAME_MILLISECONDS);
   previousTimestamp = timestamp;
-  player = walk(player, story.isOpen() ? null : walkInput.direction(), elapsed);
-  draw(timestamp);
+  if (battle === null) {
+    player = walk(
+      player,
+      story.isOpen() ? null : walkInput.direction(),
+      elapsed,
+    );
+    startBattleOnEncounter();
+  }
+  if (battle === null) {
+    draw(timestamp);
+  } else {
+    drawBattle(battle);
+  }
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
@@ -266,8 +396,23 @@ function interact(isTarget: (target: Point) => boolean): void {
   }
 }
 
+function handleBattleTap(active: Battle, point: Point): void {
+  if (active.phase() === "message") {
+    active.advance();
+    return;
+  }
+  const logical = toLogical(point);
+  const index = logical === null ? null : attackAt(logical);
+  if (index !== null) {
+    active.choose(index);
+  }
+}
+
 function handleTap(point: Point): void {
-  if (story.isOpen()) {
+  if (battle !== null) {
+    handleBattleTap(battle, point);
+    endBattleWhenFinished();
+  } else if (story.isOpen()) {
     story.advance();
   } else {
     interact((target) => isTapOn(point, target));
@@ -296,7 +441,28 @@ function releaseTouch(event: TouchEvent): void {
 }
 document.addEventListener("touchend", releaseTouch);
 document.addEventListener("touchcancel", releaseTouch);
+function handleBattleKey(active: Battle, key: string): void {
+  const direction = BATTLE_DIRECTION_BY_KEY[key];
+  if (direction !== undefined) {
+    active.moveSelection(direction);
+  } else if (key === "Enter") {
+    if (active.phase() === "message") {
+      active.advance();
+    } else {
+      active.confirm();
+    }
+  }
+}
+
 document.addEventListener("keydown", (event) => {
+  if (battle !== null) {
+    if (!event.repeat) {
+      handleBattleKey(battle, event.key);
+      endBattleWhenFinished();
+    }
+    walkInput.keyDown(event.key);
+    return;
+  }
   if (event.key === "Enter" && !event.repeat) {
     if (story.isOpen()) {
       story.advance();

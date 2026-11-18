@@ -54,7 +54,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - An already found log says so instead of counting again
 - Find state and count live in a module testable without a browser
 
-## [ ] 6. Fight a machine
+## [x] 6. Fight a machine
 
 **Blocked by:** 4
 
