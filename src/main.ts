@@ -4,8 +4,14 @@ import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
+import { pickInteraction, type Footprint } from "#/src/interaction.ts";
 import type { MachineKind } from "#/src/machines.ts";
-import { createPlayer, playerPosition, walk } from "#/src/movement.ts";
+import {
+  createPlayer,
+  isWalkableTile,
+  playerPosition,
+  walk,
+} from "#/src/movement.ts";
 import { PALETTE } from "#/src/palette.ts";
 import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
@@ -23,6 +29,7 @@ import { createStory } from "#/src/story.ts";
 import type { TextPage } from "#/src/text-window.ts";
 import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
+  isSameTile,
   PLAYER_START,
   SYSADMIN_TILE,
   TERMINAL_TILES,
@@ -31,6 +38,7 @@ import {
   WORLD_COLUMNS,
   WORLD_ROWS,
   type TileKind,
+  type TilePosition,
 } from "#/src/world.ts";
 
 const canvas = document.querySelector("canvas");
@@ -95,8 +103,6 @@ const MORE_MARKER_SIZE = 3;
 const BUBBLE_BOB_MILLISECONDS = 350;
 const BUBBLE_HEIGHT = 8;
 const TWO_FINGERS = 2;
-const TAP_RADIUS = 16;
-const TALK_DISTANCE = 20;
 const HALF = 2;
 const BOTH_SIDES = 2;
 const BUBBLE_BOB_FRAMES = 2;
@@ -128,6 +134,35 @@ let player = createPlayer(PLAYER_START);
 let battle: Battle | null = null;
 let playerHp: number | null = null;
 let lastTile = tileKey();
+
+interface Interactable {
+  readonly footprint: Footprint;
+  readonly interact: () => void;
+}
+
+const INTERACTABLES: readonly Interactable[] = [
+  {
+    footprint: [SYSADMIN_TILE],
+    interact: () => {
+      story.talkToSysadmin();
+    },
+  },
+  ...TERMINAL_TILES.map((tile, index) => ({
+    footprint: [tile],
+    interact: () => {
+      story.readTerminal(index);
+    },
+  })),
+];
+
+function isFree(tile: TilePosition): boolean {
+  return (
+    isWalkableTile(tile) &&
+    !INTERACTABLES.some(({ footprint }) =>
+      footprint.some((occupied) => isSameTile(occupied, tile)),
+    )
+  );
+}
 
 function tileKey(): string {
   return `${String(player.tile.column)},${String(player.tile.row)}`;
@@ -353,6 +388,7 @@ function tick(timestamp: number): void {
       player,
       story.isOpen() ? null : walkInput.direction(),
       elapsed,
+      isFree,
     );
     if (Math.floor(player.walked / PIXELS_PER_WALK_FRAME) !== stepBefore) {
       audio.play("footstep");
@@ -387,34 +423,26 @@ function toLogical(point: Point): Point | null {
   };
 }
 
-function isTapOn(point: Point, target: Point): boolean {
+function toWorld(point: Point): Point | undefined {
   const logical = toLogical(point);
+  if (logical === null) {
+    return undefined;
+  }
   const camera = cameraOrigin();
-  return (
-    logical !== null &&
-    Math.hypot(
-      logical.x - (target.x - camera.x + TILE_CENTER_OFFSET),
-      logical.y - (target.y - camera.y + TILE_CENTER_OFFSET),
-    ) <= TAP_RADIUS
-  );
+  return { x: logical.x + camera.x, y: logical.y + camera.y };
 }
 
-function isNear(target: Point): boolean {
-  const position = playerPosition(player);
-  return (
-    Math.hypot(position.x - target.x, position.y - target.y) <= TALK_DISTANCE
+function interact(tap?: Point): void {
+  const interaction = pickInteraction(
+    player,
+    INTERACTABLES.map(({ footprint }) => footprint),
+    tap,
   );
-}
-
-function interact(isTarget: (target: Point) => boolean): void {
-  if (isTarget(SYSADMIN_POSITION)) {
-    story.talkToSysadmin();
+  if (interaction === null) {
     return;
   }
-  const terminalIndex = TERMINAL_POSITIONS.findIndex(isTarget);
-  if (terminalIndex >= 0) {
-    story.readTerminal(terminalIndex);
-  }
+  player = { ...player, facing: interaction.facing };
+  INTERACTABLES[interaction.target]?.interact();
 }
 
 function chooseWithSound(active: Battle, choose: () => void): void {
@@ -456,7 +484,10 @@ function handleTap(point: Point): void {
   } else if (story.isOpen()) {
     story.advance();
   } else {
-    interact((target) => isTapOn(point, target));
+    const tap = toWorld(point);
+    if (tap !== undefined) {
+      interact(tap);
+    }
   }
 }
 
@@ -527,7 +558,7 @@ document.addEventListener("keydown", (event) => {
     if (story.isOpen()) {
       story.advance();
     } else {
-      interact(isNear);
+      interact();
     }
   }
   walkInput.keyDown(event.key);

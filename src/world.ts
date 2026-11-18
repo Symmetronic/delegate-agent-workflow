@@ -7,6 +7,10 @@ export interface TilePosition {
 
 export const TILE_SIZE = 8;
 
+export function isSameTile(a: TilePosition, b: TilePosition): boolean {
+  return a.column === b.column && a.row === b.row;
+}
+
 const TILE_KIND_BY_SYMBOL: Readonly<Record<string, TileKind>> = {
   ".": "ground",
   "~": "cable-grass",
