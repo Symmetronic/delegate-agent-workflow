@@ -85,7 +85,7 @@ A playable prototype of a Game Boy style top-down game in which humanity faces a
 - Sound never blocks or delays the game loop, and a browser that refuses audio does not break the game
 - The audio module's interface is cut so that a looping music file can later be added behind it without touching its callers
 
-## [ ] 9. Earn the ultimate attack
+## [x] 9. Earn the ultimate attack
 
 **Blocked by:** 5, 7
 

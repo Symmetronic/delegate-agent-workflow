@@ -147,7 +147,11 @@ function startBattleOnEncounter(): void {
   }
   lastTile = key;
   if (encounterTrigger.stepOnto(currentTileKind())) {
-    battle = createBattle(Math.random, playerHp ?? undefined);
+    battle = createBattle(
+      Math.random,
+      playerHp ?? undefined,
+      story.hasUltimate(),
+    );
     audio.play("encounter");
   }
 }

@@ -9,6 +9,7 @@ export interface Story {
   talkToSysadmin(): void;
   readLog(index: number): void;
   isBubbleVisible(): boolean;
+  hasUltimate(): boolean;
 }
 
 const INTRO_TEXT =
@@ -26,6 +27,12 @@ export function sysadminReminder(found: number): string {
   return `Cable grass, awkward questions. Logs found: ${String(found)} of ${String(TOTAL_LOGS)}.`;
 }
 
+export const ULTIMATE_TRADE_WINDOWS: readonly string[] = [
+  "You found all five logs! Now the machines' secrets are yours.",
+  "Take this: Show it a picture of a cat. I will trade you for Compliment.",
+  "Nothing melts a machine like a fluffy cat. Use it wisely.",
+];
+
 function toPages(texts: readonly string[]): readonly TextPage[] {
   return texts.flatMap((text) => paginate(text));
 }
@@ -34,6 +41,7 @@ export function createStory(): Story {
   let pages: readonly TextPage[] = toPages([INTRO_TEXT]);
   let index = 0;
   let talkedToSysadmin = false;
+  let ultimateTraded = false;
   const logs = createLogs();
 
   function open(texts: readonly string[]): void {
@@ -60,6 +68,15 @@ export function createStory(): Story {
       if (index < pages.length) {
         return;
       }
+      if (
+        talkedToSysadmin &&
+        !ultimateTraded &&
+        logs.foundCount() >= TOTAL_LOGS
+      ) {
+        ultimateTraded = true;
+        open(ULTIMATE_TRADE_WINDOWS);
+        return;
+      }
       open(
         talkedToSysadmin
           ? [sysadminReminder(logs.foundCount())]
@@ -80,6 +97,9 @@ export function createStory(): Story {
     },
     isBubbleVisible() {
       return !talkedToSysadmin;
+    },
+    hasUltimate() {
+      return ultimateTraded;
     },
   };
 }

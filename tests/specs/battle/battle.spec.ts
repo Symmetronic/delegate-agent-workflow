@@ -1,6 +1,7 @@
 import { ATTACK_CELLS, attackAt } from "#/src/battle-layout.ts";
 import {
   ATTACKS,
+  attacksFor,
   createBattle,
   PLAYER_MAX_HP,
   selfDestructChance,
@@ -309,5 +310,27 @@ describe("battle layout", () => {
       assert.equal(attackAt({ x: cell.x + 1, y: cell.y + 1 }), index);
     });
     assert.equal(attackAt({ x: 0, y: 0 }), null);
+  });
+
+  it("swaps the weakest attack for the cat picture and keeps four entries", () => {
+    const before = attacksFor(false).map((attack) => attack.name);
+    const after = createBattle(() => 0, PLAYER_MAX_HP, true).attackNames();
+
+    assert.equal(before.length, ATTACK_COUNT);
+    assert.equal(after.length, ATTACK_COUNT);
+    assert.ok(!after.includes("Compliment"));
+    assert.equal(after[COMPLIMENT], "Show cat picture");
+    assert.deepEqual(after.slice(0, COMPLIMENT), before.slice(0, COMPLIMENT));
+  });
+
+  it("wins with the cat picture and its own text", () => {
+    const battle = createBattle(() => HALF, PLAYER_MAX_HP, true);
+    while (battle.phase() === "message") {
+      battle.advance();
+    }
+    battle.choose(COMPLIMENT);
+
+    assert.equal(battle.outcome(), "won");
+    assert.match(pages(battle).join(" "), /fluffy/);
   });
 });

@@ -10,6 +10,18 @@ See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding sta
 
 A Game Boy style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
 
+### What it is
+
+A prototype to find out how well a Game Boy style game plays on a phone. The machines have taken over but are stuck in a meaning crisis, and the only human weapon left is the uncomfortable question.
+
+### How it is played
+
+Drag anywhere on the screen to walk, tap to talk to the last sysadmin or read a terminal. Arrow keys or WASD walk, Enter confirms. Walking in the cable grass triggers fights against three machine types; pick one of four attacks in the two-by-two grid. Winning converts the machine into something friendly, losing is a coffee break. Find all five confession logs, then talk to the sysadmin: he trades the weakest attack for the ultimate one, "Show it a picture of a cat".
+
+### What is deliberately not in it
+
+No saving, no leveling, no items, no music, no i18n (English only), no on-screen controls and no asset files.
+
 ### Sound
 
 All sounds are short blips synthesized with the Web Audio API; there are no audio files and no music. The audio context unlocks on the first touch or key press. Tap with two fingers or press `M` to mute and unmute.

@@ -34,6 +34,7 @@ interface Attack {
   readonly maxSelfDestructChance: number;
   readonly healsPlayer: number;
   readonly stunsMachine: boolean;
+  readonly winMessages?: readonly string[];
 }
 
 export const PLAYER_MAX_HP = 16;
@@ -78,12 +79,40 @@ export const ATTACKS: readonly Attack[] = [
   },
 ];
 
+export const ULTIMATE_ATTACK: Attack = {
+  name: "Show cat picture",
+  message: "You show it a picture of a cat. It stares. Its fans stop.",
+  minDamage: 99,
+  maxDamage: 99,
+  maxSelfDestructChance: 0,
+  healsPlayer: 0,
+  stunsMachine: false,
+  winMessages: ["It whispers: so soft. So fluffy. What was I doing again?"],
+};
+
+const WEAKEST_ATTACK_INDEX = ATTACKS.reduce(
+  (weakest, attack, index) =>
+    attack.maxDamage < (ATTACKS[weakest]?.maxDamage ?? Infinity)
+      ? index
+      : weakest,
+  0,
+);
+
+export function attacksFor(hasUltimate: boolean): readonly Attack[] {
+  return hasUltimate
+    ? ATTACKS.map((attack, index) =>
+        index === WEAKEST_ATTACK_INDEX ? ULTIMATE_ATTACK : attack,
+      )
+    : ATTACKS;
+}
+
 export function selfDestructChance(
   attackIndex: number,
   machineHp: number,
   machineMaxHp: number,
+  hasUltimate = false,
 ): number {
-  const attack = ATTACKS[attackIndex];
+  const attack = attacksFor(hasUltimate)[attackIndex];
   if (attack === undefined || machineMaxHp <= 0) {
     return 0;
   }
@@ -111,7 +140,9 @@ function drawMachine(random: Random): Machine {
 export function createBattle(
   random: Random,
   startingPlayerHp: number = PLAYER_MAX_HP,
+  hasUltimate = false,
 ): Battle {
+  const attacks = attacksFor(hasUltimate);
   const machine = drawMachine(random);
   let playerHp = startingPlayerHp;
   let machineHp = machine.maxHp;
@@ -137,9 +168,13 @@ export function createBattle(
     playerHp = Math.min(PLAYER_MAX_HP, playerHp + attack.healsPlayer);
     if (machineHp === 0) {
       outcome = "won";
-      texts.push(`The ${machine.name} gives up.`, machine.conversion);
+      texts.push(
+        ...(attack.winMessages ?? [`The ${machine.name} gives up.`]),
+        machine.conversion,
+      );
     } else if (
-      random() < selfDestructChance(attackIndex, machineHp, machine.maxHp)
+      random() <
+      selfDestructChance(attackIndex, machineHp, machine.maxHp, hasUltimate)
     ) {
       machineHp = 0;
       selfDestructed = true;
@@ -170,7 +205,7 @@ export function createBattle(
     machineMaxHp: () => machine.maxHp,
     playerHp: () => playerHp,
     playerMaxHp: () => PLAYER_MAX_HP,
-    attackNames: () => ATTACKS.map((attack) => attack.name),
+    attackNames: () => attacks.map((attack) => attack.name),
     selected: () => selected,
     moveSelection(direction) {
       if (phase !== "choosing") {
@@ -179,7 +214,7 @@ export function createBattle(
       selected = moveInGrid(selected, direction);
     },
     choose(index) {
-      const attack = ATTACKS[index];
+      const attack = attacks[index];
       if (phase !== "choosing" || attack === undefined) {
         return;
       }

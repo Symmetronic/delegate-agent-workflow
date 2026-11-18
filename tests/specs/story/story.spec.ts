@@ -1,3 +1,4 @@
+import { TOTAL_LOGS } from "#/src/logs.ts";
 import { createStory, sysadminReminder, type Story } from "#/src/story.ts";
 import { TEXT_COLUMNS, TEXT_LINES } from "#/src/text-window.ts";
 import assert from "node:assert/strict";
@@ -84,5 +85,35 @@ describe("story", () => {
     story.talkToSysadmin();
 
     assert.ok(story.hasMorePages());
+  });
+
+  it("trades the ultimate attack in dialog only after all logs are found", () => {
+    const story = startedStory();
+    story.talkToSysadmin();
+    countWindows(story);
+    for (let log = 0; log < TOTAL_LOGS; log += 1) {
+      story.readLog(log);
+      countWindows(story);
+      assert.ok(!story.hasUltimate());
+    }
+    story.talkToSysadmin();
+
+    assert.ok(story.hasUltimate());
+    story.advance();
+    assert.match(story.page()?.join(" ") ?? "", /cat/i);
+    countWindows(story);
+    story.talkToSysadmin();
+    assert.equal(story.page()?.join(" "), sysadminReminder(TOTAL_LOGS));
+  });
+
+  it("does not trade with missing logs", () => {
+    const story = startedStory();
+    story.talkToSysadmin();
+    countWindows(story);
+    story.readLog(0);
+    countWindows(story);
+    story.talkToSysadmin();
+
+    assert.ok(!story.hasUltimate());
   });
 });
