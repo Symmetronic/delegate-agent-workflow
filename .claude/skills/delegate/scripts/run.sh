@@ -40,6 +40,26 @@ require_branch_and_tasks_file() {
   [ -f "$TASKS_FILE" ] || fail "missing tasks file $TASKS_FILE"
 }
 
+require_unticked_tasks_numbered_from_one() {
+  awk '
+    /^## / {
+      tasks++
+      if ($0 !~ "^## \\[ \\] " tasks "\\. ") exit 1
+    }
+    END { if (tasks == 0) exit 1 }
+  ' "$TASKS_FILE" \
+    || fail "every task heading in $TASKS_FILE must look like '## [ ] <number>. <title>', unticked and numbered from 1"
+}
+
+require_new_remote_branch() {
+  git -C "$REPOSITORY_ROOT" ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1
+  case $? in
+    0) fail "branch $BRANCH already exists on the remote" ;;
+    2) ;;
+    *) fail "could not reach the remote to check whether branch $BRANCH exists" ;;
+  esac
+}
+
 require_docker() {
   docker info >/dev/null 2>&1 \
     || fail "Docker is not available; rebuild the dev container to get Docker-in-Docker"
@@ -56,9 +76,12 @@ require_git_identity() {
 }
 
 require_no_container_for_branch() {
-  if docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+  container_state="$(docker container inspect --format '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null)" \
+    || return 0
+  if [ "$container_state" = running ]; then
     fail "a delegate run for $BRANCH is already running (container $CONTAINER_NAME)"
   fi
+  fail "container $CONTAINER_NAME is left over from an earlier delegate run for $BRANCH; remove it with: docker rm $CONTAINER_NAME"
 }
 
 repository_https_url() {
@@ -94,9 +117,11 @@ copy_inputs_into_container() {
 }
 
 run_delegate() {
+  require_unticked_tasks_numbered_from_one
   require_secret CLAUDE_CODE_OAUTH_TOKEN
   require_secret GH_TOKEN
   require_git_identity
+  require_new_remote_branch
   require_docker
   require_no_container_for_branch
 

@@ -96,8 +96,11 @@ push_branch() {
   branch_pushed=true
 }
 
-remote_branch_exists() {
-  git_with_github_token ls-remote --exit-code --heads "$REPOSITORY_URL" "$BRANCH" >/dev/null
+push_new_branch() {
+  # An empty lease value makes the push fail if the branch already exists on the remote: https://git-scm.com/docs/git-push#Documentation/git-push.txt---force-with-leaseltrefnamegtltexpectgt
+  git_with_github_token push --quiet --set-upstream --force-with-lease="$BRANCH:" origin "$BRANCH" \
+    || fail "pushing the new branch failed; it may already exist on the remote"
+  branch_pushed=true
 }
 
 require_clean_working_tree() {
@@ -135,7 +138,7 @@ commit_tasks_file() {
   cp "$TASKS_FILE" "$TASKS_FILE_IN_REPOSITORY"
   git add "$TASKS_FILE_IN_REPOSITORY"
   git commit --quiet --message "chore: Add tasks"
-  push_branch
+  push_new_branch
 }
 
 unticked_task_numbers() {
@@ -227,9 +230,6 @@ create_pull_request() {
 main() {
   trap report_failure EXIT
   load_secrets
-  if remote_branch_exists; then
-    fail "branch $BRANCH already exists on the remote"
-  fi
 
   start_step "clone repository"
   clone_repository
