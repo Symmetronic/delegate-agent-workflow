@@ -16,7 +16,7 @@ See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding sta
    2. **Review step:** Claude (Opus) reviews the changes against the tasks and [CODING_STANDARDS.md](CODING_STANDARDS.md) and commits improvements.
    3. The tasks file is removed and Claude (Opus) opens a pull request.
 
-Every commit is checked with `npm run verify` and the branch is pushed after every task and step, so on failure the remote branch keeps the work done so far. The container is removed either way. The log is in `.claude/skills/delegate/runs/<branch>/run.log`.
+Every commit is checked with `npm run verify` and the branch is pushed after every task and step, so on failure the remote branch keeps the work done so far. The container is removed either way. The run ends with one outcome line: the pull request URL, or the step that failed, why, and whether the remote branch has the work so far. The full log is in `.claude/skills/delegate/runs/<branch>/run.log`.
 
 ### Setup
 

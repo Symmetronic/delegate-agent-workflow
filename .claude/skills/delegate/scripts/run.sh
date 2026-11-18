@@ -1,27 +1,38 @@
 #!/bin/sh
 # Usage: run.sh <branch>
 # Runs a delegate run for the tasks file in runs/<branch>/TASKS.md inside a one-shot container.
+# Logs to runs/<branch>/run.log and prints one outcome line: the pull request URL or why the run failed.
 
 set -u
 
 readonly BRANCH="${1:-}"
-readonly SKILL_DIRECTORY="$(cd "$(dirname "$0")/.." && pwd)"
-readonly REPOSITORY_ROOT="$(git -C "$SKILL_DIRECTORY" rev-parse --show-toplevel)"
+SKILL_DIRECTORY="$(cd "$(dirname "$0")/.." && pwd)"
+readonly SKILL_DIRECTORY
+REPOSITORY_ROOT="$(git -C "$SKILL_DIRECTORY" rev-parse --show-toplevel)"
+readonly REPOSITORY_ROOT
 readonly RUN_DIRECTORY="$SKILL_DIRECTORY/runs/$BRANCH"
 readonly TASKS_FILE="$RUN_DIRECTORY/TASKS.md"
 readonly LOG_FILE="$RUN_DIRECTORY/run.log"
 readonly SECRETS_FILE="$REPOSITORY_ROOT/.env"
 readonly PIPELINE_SCRIPT="$SKILL_DIRECTORY/scripts/pipeline.sh"
 readonly IMAGE_NAME="delegate-devcontainer"
-readonly CONTAINER_NAME="delegate-$(printf '%s' "$BRANCH" | tr -c '[:alnum:]_.-' '-')"
+CONTAINER_NAME="delegate-$(printf '%s' "$BRANCH" | tr -c '[:alnum:]_.-' '-')"
+readonly CONTAINER_NAME
 readonly CONTAINER_PIPELINE_SCRIPT="/tmp/delegate-pipeline.sh"
 readonly CONTAINER_TASKS_FILE="/tmp/delegate-TASKS.md"
 readonly CONTAINER_SECRETS_FILE="/tmp/delegate-secrets"
-readonly LOG_LINES_TO_REPORT=20
+readonly OUTCOME_PREFIX="delegate: "
+
+current_step="check prerequisites"
 
 fail() {
-  echo "delegate: $*" >&2
+  echo "${OUTCOME_PREFIX}failed during $current_step: $*; nothing was pushed"
   exit 1
+}
+
+start_step() {
+  current_step="$1"
+  echo "==> $current_step"
 }
 
 require_branch_and_tasks_file() {
@@ -92,15 +103,25 @@ run_delegate() {
   trap remove_container EXIT
   trap 'exit 1' INT TERM
 
-  echo "==> build image"
-  build_image || fail "image build failed"
-  create_container || fail "container creation failed"
+  start_step "build image"
+  build_image || fail "docker build failed"
+  start_step "start container"
+  create_container || fail "docker create failed"
   copy_inputs_into_container || fail "copying inputs into the container failed"
   docker start --attach "$CONTAINER_NAME"
 }
 
-require_branch_and_tasks_file
-(run_delegate) >"$LOG_FILE" 2>&1
-readonly EXIT_STATUS=$?
-tail -n "$LOG_LINES_TO_REPORT" "$LOG_FILE"
-exit "$EXIT_STATUS"
+report_outcome() {
+  outcome="$(grep "^$OUTCOME_PREFIX" "$LOG_FILE" | tail -n 1)"
+  echo "${outcome:-${OUTCOME_PREFIX}failed without reporting an outcome; see $LOG_FILE}"
+}
+
+main() {
+  require_branch_and_tasks_file
+  (run_delegate) >"$LOG_FILE" 2>&1
+  exit_status=$?
+  report_outcome
+  exit "$exit_status"
+}
+
+main

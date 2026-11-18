@@ -12,20 +12,31 @@ readonly LARGE_MODEL="opus"
 readonly SMALL_MODEL="sonnet"
 
 current_step="setup"
+failure_reason=""
+branch_pushed=false
 github_token=""
 claude_token=""
 pull_request_title_file=""
 pull_request_body_file=""
 
 fail() {
-  echo "delegate: $*" >&2
+  failure_reason="$*"
   exit 1
 }
 
-report_failed_step() {
+branch_url() {
+  echo "${REPOSITORY_URL%.git}/tree/$BRANCH"
+}
+
+report_failure() {
   exit_status=$?
   if [ "$exit_status" -ne 0 ]; then
-    echo "delegate: run failed during step: $current_step" >&2
+    failure="failed during $current_step${failure_reason:+: $failure_reason}"
+    if [ "$branch_pushed" = true ]; then
+      echo "delegate: $failure; work so far is on $(branch_url)"
+    else
+      echo "delegate: $failure; nothing was pushed"
+    fi
   fi
   exit "$exit_status"
 }
@@ -82,6 +93,7 @@ install_dependencies() {
 
 push_branch() {
   git_with_github_token push --quiet --set-upstream origin "$BRANCH"
+  branch_pushed=true
 }
 
 remote_branch_exists() {
@@ -204,15 +216,16 @@ Do not change any file in the repository, do not commit, do not push and do not 
 }
 
 create_pull_request() {
-  gh_with_github_token pr create \
+  pull_request_url="$(gh_with_github_token pr create \
     --base "$MAIN_BRANCH" \
     --head "$BRANCH" \
     --title "$(head -n 1 "$pull_request_title_file")" \
-    --body-file "$pull_request_body_file"
+    --body-file "$pull_request_body_file")"
+  echo "delegate: pull request $pull_request_url"
 }
 
 main() {
-  trap report_failed_step EXIT
+  trap report_failure EXIT
   load_secrets
   if remote_branch_exists; then
     fail "branch $BRANCH already exists on the remote"
@@ -233,7 +246,6 @@ main() {
   write_pull_request
   start_step "create pull request"
   create_pull_request
-  echo "delegate: done"
 }
 
 main

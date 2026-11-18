@@ -34,4 +34,4 @@ Tell the user the delegate run has started, that it logs to `.claude/skills/dele
 
 ## 4. Report
 
-When the background command finishes, report its outcome from the tail of its output: the pull request URL on success, or the step that failed. On failure, remind the user that everything committed so far is on the remote branch.
+When the background command finishes, its last output line is the outcome of the delegate run: the pull request URL, or the step that failed, why, and whether the work so far is on the remote branch. Relay that line to the user without adding to it.
