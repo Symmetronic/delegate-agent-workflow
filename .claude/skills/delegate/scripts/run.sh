@@ -13,14 +13,14 @@ readonly REPOSITORY_ROOT
 readonly RUN_DIRECTORY="$SKILL_DIRECTORY/runs/$BRANCH"
 readonly TASKS_FILE="$RUN_DIRECTORY/TASKS.md"
 readonly LOG_FILE="$RUN_DIRECTORY/run.log"
-readonly SECRETS_FILE="$REPOSITORY_ROOT/.env"
+readonly ENV_FILE="$REPOSITORY_ROOT/.env"
 readonly PIPELINE_SCRIPT="$SKILL_DIRECTORY/scripts/pipeline.sh"
 readonly IMAGE_NAME="delegate-devcontainer"
 CONTAINER_NAME="delegate-$(printf '%s' "$BRANCH" | tr -c '[:alnum:]_.-' '-')"
 readonly CONTAINER_NAME
 readonly CONTAINER_PIPELINE_SCRIPT="/tmp/delegate-pipeline.sh"
 readonly CONTAINER_TASKS_FILE="/tmp/delegate-TASKS.md"
-readonly CONTAINER_SECRETS_FILE="/tmp/delegate-secrets"
+readonly CONTAINER_ENV_FILE="/tmp/delegate-env"
 readonly OUTCOME_PREFIX="delegate: "
 
 current_step="check prerequisites"
@@ -65,9 +65,9 @@ require_docker() {
     || fail "Docker is not available; rebuild the dev container to get Docker-in-Docker"
 }
 
-require_secret() {
-  grep -Eq "^$1=.+" "$SECRETS_FILE" 2>/dev/null \
-    || fail "$SECRETS_FILE must define a non-empty $1 (see .env.example)"
+require_delegate_token() {
+  grep -Eq "^$1=.+" "$ENV_FILE" 2>/dev/null \
+    || fail "$ENV_FILE must define a non-empty $1 (see .env.example)"
 }
 
 require_git_identity() {
@@ -106,7 +106,7 @@ create_container() {
     --env "GIT_USER_NAME=$(git config user.name)" \
     --env "GIT_USER_EMAIL=$(git config user.email)" \
     --env "TASKS_FILE=$CONTAINER_TASKS_FILE" \
-    --env "SECRETS_FILE=$CONTAINER_SECRETS_FILE" \
+    --env "ENV_FILE=$CONTAINER_ENV_FILE" \
     "$IMAGE_NAME" \
     sh "$CONTAINER_PIPELINE_SCRIPT" >/dev/null
 }
@@ -114,13 +114,13 @@ create_container() {
 copy_inputs_into_container() {
   docker cp --archive "$PIPELINE_SCRIPT" "$CONTAINER_NAME:$CONTAINER_PIPELINE_SCRIPT" \
     && docker cp --archive "$TASKS_FILE" "$CONTAINER_NAME:$CONTAINER_TASKS_FILE" \
-    && docker cp --archive "$SECRETS_FILE" "$CONTAINER_NAME:$CONTAINER_SECRETS_FILE"
+    && docker cp --archive "$ENV_FILE" "$CONTAINER_NAME:$CONTAINER_ENV_FILE"
 }
 
 run_delegate() {
   require_unticked_tasks_numbered_from_one
-  require_secret CLAUDE_CODE_OAUTH_TOKEN
-  require_secret GH_TOKEN
+  require_delegate_token CLAUDE_CODE_OAUTH_TOKEN
+  require_delegate_token GH_TOKEN
   require_git_identity
   require_new_remote_branch
   require_docker

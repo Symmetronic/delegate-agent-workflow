@@ -48,19 +48,19 @@ start_step() {
   echo "==> $current_step"
 }
 
-read_secret() {
-  sed -n "s/^$1=//p" "$SECRETS_FILE" | tail -n 1 | tr -d '\r'
+read_delegate_token() {
+  sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1 | tr -d '\r'
 }
 
-load_secrets() {
-  github_token="$(read_secret GH_TOKEN)"
-  claude_token="$(read_secret CLAUDE_CODE_OAUTH_TOKEN)"
+load_delegate_tokens() {
+  github_token="$(read_delegate_token GH_TOKEN)"
+  claude_token="$(read_delegate_token CLAUDE_CODE_OAUTH_TOKEN)"
   readonly github_token claude_token
 }
 
 move_env_file_into_workspace() {
-  (umask 077 && sed -E "/$DELEGATE_TOKEN_LINES/d" "$SECRETS_FILE" >"$ENV_FILE_IN_REPOSITORY")
-  rm -f "$SECRETS_FILE"
+  (umask 077 && sed -E "/$DELEGATE_TOKEN_LINES/d" "$ENV_FILE" >"$ENV_FILE_IN_REPOSITORY")
+  rm -f "$ENV_FILE"
 }
 
 git_with_github_token() {
@@ -250,7 +250,7 @@ create_pull_request() {
 
 main() {
   trap report_failure EXIT
-  load_secrets
+  load_delegate_tokens
 
   start_step "clone repository"
   clone_repository
