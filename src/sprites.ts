@@ -1,3 +1,4 @@
+import type { GrassFrame } from "#/src/grass.ts";
 import { PALETTES, type PaletteName } from "#/src/palette.ts";
 import type { Direction } from "#/src/walk-input.ts";
 import type { PropKind, TileKind } from "#/src/world.ts";
@@ -18,6 +19,45 @@ export const TILE_PALETTES: Readonly<
   debris: ["scrap"],
   wreck: ["earth"],
   "floor-mat": ["mat"],
+};
+
+const GRASS_ROOTS: SpriteRows = ["12012012", "21021021", "02102102"];
+
+const GRASS_STILL: SpriteRows = [
+  "01001001",
+  "21021021",
+  "02102102",
+  "01201201",
+  "10210210",
+  ...GRASS_ROOTS,
+];
+
+export const GRASS_SPRITES: Readonly<Record<GrassFrame, SpriteRows>> = {
+  still: GRASS_STILL,
+  leaning: [
+    "10100100",
+    "12102102",
+    "20210210",
+    "10120120",
+    "01021021",
+    ...GRASS_ROOTS,
+  ],
+  rustling: [
+    "10000001",
+    "01000010",
+    "20100102",
+    "02011020",
+    "10200201",
+    ...GRASS_ROOTS,
+  ],
+  settling: [
+    "00100100",
+    "10000001",
+    "02000020",
+    "01200210",
+    "10211201",
+    ...GRASS_ROOTS,
+  ],
 };
 
 const GROUND: SpriteRows = [
@@ -43,16 +83,7 @@ export const TILE_SPRITES: Readonly<Record<TileKind, SpriteRows>> = {
     "00000200",
     "00000000",
   ],
-  "cable-grass": [
-    "01001001",
-    "21021021",
-    "02102102",
-    "01201201",
-    "10210210",
-    "12012012",
-    "21021021",
-    "02102102",
-  ],
+  "cable-grass": GRASS_STILL,
   obstacle: [
     "00333300",
     "03112230",

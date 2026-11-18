@@ -4,11 +4,13 @@ import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
+import { createGrass, type GrassFrame } from "#/src/grass.ts";
 import { pickInteraction, type Footprint } from "#/src/interaction.ts";
 import type { MachineKind } from "#/src/machines.ts";
 import {
   createPlayer,
   isWalkableTile,
+  occupiedTiles,
   playerPosition,
   walk,
 } from "#/src/movement.ts";
@@ -17,6 +19,7 @@ import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
   bakeSprite,
   BUBBLE_SPRITE,
+  GRASS_SPRITES,
   PLAYER_SPRITES,
   PRINTER_SPRITE,
   PROP_PALETTES,
@@ -33,6 +36,7 @@ import { createStory } from "#/src/story.ts";
 import type { TextPage } from "#/src/text-window.ts";
 import { createWalkInput, type Direction } from "#/src/walk-input.ts";
 import {
+  isCableGrass,
   isSameTile,
   PLAYER_START,
   PROPS,
@@ -79,6 +83,12 @@ function tileImages(kind: TileKind): readonly HTMLCanvasElement[] {
   tileImageCache.set(kind, baked);
   return baked;
 }
+const grassImages: Readonly<Record<GrassFrame, HTMLCanvasElement>> = {
+  still: bakeSprite(GRASS_SPRITES.still, "grass"),
+  leaning: bakeSprite(GRASS_SPRITES.leaning, "grass"),
+  rustling: bakeSprite(GRASS_SPRITES.rustling, "grass"),
+  settling: bakeSprite(GRASS_SPRITES.settling, "grass"),
+};
 const propImages: Readonly<Record<PropKind, HTMLCanvasElement>> = {
   rocket: bakeSprite(PROP_SPRITES.rocket, PROP_PALETTES.rocket),
   "rocket-tail": bakeSprite(
@@ -157,6 +167,7 @@ const audio = createAudio(() =>
 );
 const story = createStory();
 const walkInput = createWalkInput();
+const grass = createGrass();
 const encounterTrigger = createEncounterTrigger(Math.random);
 let player = createPlayer(PLAYER_START);
 let battle: Battle | null = null;
@@ -283,6 +294,32 @@ function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
   }
 }
 
+function tileImage(
+  tile: TilePosition,
+  timestamp: number,
+): HTMLCanvasElement | undefined {
+  const kind = tileAt(tile.column, tile.row);
+  if (isCableGrass(kind)) {
+    return grassImages[grass.frame(tile, timestamp)];
+  }
+  const frames = tileImages(kind);
+  return frames[Math.floor(timestamp / GLOW_MILLISECONDS) % frames.length];
+}
+
+function rustleEnteredGrass(
+  before: readonly TilePosition[],
+  now: number,
+): void {
+  for (const tile of occupiedTiles(player)) {
+    if (
+      isCableGrass(tileAt(tile.column, tile.row)) &&
+      !before.some((previous) => isSameTile(previous, tile))
+    ) {
+      grass.rustle(tile, now);
+    }
+  }
+}
+
 function draw(timestamp: number): void {
   if (context === null) {
     return;
@@ -296,9 +333,7 @@ function draw(timestamp: number): void {
   const lastRow = Math.ceil((camera.y + LOGICAL_SIZE.height) / TILE_SIZE);
   for (let row = firstRow; row < lastRow; row += 1) {
     for (let column = firstColumn; column < lastColumn; column += 1) {
-      const frames = tileImages(tileAt(column, row));
-      const image =
-        frames[Math.floor(timestamp / GLOW_MILLISECONDS) % frames.length];
+      const image = tileImage({ column, row }, timestamp);
       if (image !== undefined) {
         context.drawImage(
           image,
@@ -424,6 +459,7 @@ function tick(timestamp: number): void {
   previousTimestamp = timestamp;
   if (battle === null) {
     const stepBefore = Math.floor(player.walked / PIXELS_PER_WALK_FRAME);
+    const tilesBefore = occupiedTiles(player);
     player = walk(
       player,
       story.isOpen() ? null : walkInput.direction(),
@@ -433,6 +469,7 @@ function tick(timestamp: number): void {
     if (Math.floor(player.walked / PIXELS_PER_WALK_FRAME) !== stepBefore) {
       audio.play("footstep");
     }
+    rustleEnteredGrass(tilesBefore, timestamp);
     startBattleOnEncounter();
   }
   if (battle === null) {
