@@ -5,7 +5,7 @@ import { computeCameraOrigin, type Point } from "#/src/camera.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
 import type { MachineKind } from "#/src/machines.ts";
-import { createPlayer, walk } from "#/src/movement.ts";
+import { createPlayer, playerPosition, walk } from "#/src/movement.ts";
 import { PALETTE } from "#/src/palette.ts";
 import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
@@ -130,16 +130,11 @@ let playerHp: number | null = null;
 let lastTile = tileKey();
 
 function tileKey(): string {
-  const column = Math.floor((player.x + TILE_CENTER_OFFSET) / TILE_SIZE);
-  const row = Math.floor((player.y + TILE_CENTER_OFFSET) / TILE_SIZE);
-  return `${String(column)},${String(row)}`;
+  return `${String(player.tile.column)},${String(player.tile.row)}`;
 }
 
 function currentTileKind(): TileKind {
-  return tileAt(
-    Math.floor((player.x + TILE_CENTER_OFFSET) / TILE_SIZE),
-    Math.floor((player.y + TILE_CENTER_OFFSET) / TILE_SIZE),
-  );
+  return tileAt(player.tile.column, player.tile.row);
 }
 
 function startBattleOnEncounter(): void {
@@ -167,10 +162,11 @@ function endBattleWhenFinished(): void {
 }
 
 function cameraOrigin(): Point {
+  const position = playerPosition(player);
   return computeCameraOrigin(
     {
-      x: player.x + TILE_CENTER_OFFSET,
-      y: player.y + TILE_CENTER_OFFSET,
+      x: position.x + TILE_CENTER_OFFSET,
+      y: position.y + TILE_CENTER_OFFSET,
     },
     LOGICAL_SIZE,
     WORLD_SIZE,
@@ -269,10 +265,11 @@ function draw(timestamp: number): void {
   const frame =
     frames[Math.floor(player.walked / PIXELS_PER_WALK_FRAME) % frames.length];
   if (frame !== undefined) {
+    const position = playerPosition(player);
     context.drawImage(
       frame,
-      Math.round(player.x) - camera.x,
-      Math.round(player.y) - camera.y,
+      Math.round(position.x) - camera.x,
+      Math.round(position.y) - camera.y,
     );
   }
   drawTextWindow(story.page(), story.hasMorePages());
@@ -403,7 +400,10 @@ function isTapOn(point: Point, target: Point): boolean {
 }
 
 function isNear(target: Point): boolean {
-  return Math.hypot(player.x - target.x, player.y - target.y) <= TALK_DISTANCE;
+  const position = playerPosition(player);
+  return (
+    Math.hypot(position.x - target.x, position.y - target.y) <= TALK_DISTANCE
+  );
 }
 
 function interact(isTarget: (target: Point) => boolean): void {

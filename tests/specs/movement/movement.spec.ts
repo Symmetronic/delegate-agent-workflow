@@ -1,23 +1,53 @@
-import { createPlayer, walk, WALK_SPEED } from "#/src/movement.ts";
+import {
+  createPlayer,
+  isStandingStill,
+  occupiedTiles,
+  playerPosition,
+  TURN_MILLISECONDS,
+  walk,
+  WALK_SPEED,
+  type Player,
+} from "#/src/movement.ts";
 import { createWalkInput, DRAG_THRESHOLD } from "#/src/walk-input.ts";
 import { PLAYER_START, TILE_SIZE } from "#/src/world.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 const SECOND = 1000;
-const HALF_SECOND = 500;
-const SECONDS_TO_CROSS_WORLD = 20;
+const FRAME = 16;
 const TWICE = 2;
+const HALF = 2;
+const STEP_MILLISECONDS = (TILE_SIZE * SECOND) / WALK_SPEED;
 const OPEN_GROUND = { column: 10, row: 12 };
 const NEXT_TO_TOP_WALL = { column: 10, row: 1 };
+const SECONDS_TO_CROSS_WORLD = 20;
+const ROUNDING_TOLERANCE = 1e-6;
+
+function hold(
+  player: Player,
+  direction: Parameters<typeof walk>[1],
+  milliseconds: number,
+): Player {
+  let current = player;
+  for (let time = 0; time < milliseconds; time += FRAME) {
+    current = walk(current, direction, Math.min(FRAME, milliseconds - time));
+  }
+  return current;
+}
+
+function facingRight(): Player {
+  return { ...createPlayer(OPEN_GROUND), facing: "right" };
+}
 
 describe("movement", () => {
   it("starts on the player start tile facing down", () => {
-    assert.deepEqual(createPlayer(PLAYER_START), {
+    const player = createPlayer(PLAYER_START);
+
+    assert.deepEqual(player.tile, PLAYER_START);
+    assert.equal(player.facing, "down");
+    assert.deepEqual(playerPosition(player), {
       x: PLAYER_START.column * TILE_SIZE,
       y: PLAYER_START.row * TILE_SIZE,
-      facing: "down",
-      walked: 0,
     });
   });
 
@@ -26,30 +56,100 @@ describe("movement", () => {
     assert.deepEqual(walk(player, null, SECOND), player);
   });
 
-  it("walks at the walk speed and faces the direction of travel", () => {
-    const start = createPlayer(OPEN_GROUND);
-    const player = walk(start, "right", SECOND);
-    assert.equal(player.x, start.x + WALK_SPEED);
-    assert.equal(player.y, start.y);
-    assert.equal(player.facing, "right");
-    assert.equal(player.walked, WALK_SPEED);
+  it("walks one whole tile at the walk speed", () => {
+    const player = hold(facingRight(), "right", STEP_MILLISECONDS);
+
+    assert.deepEqual(player.tile, {
+      column: OPEN_GROUND.column + 1,
+      row: OPEN_GROUND.row,
+    });
+    assert.ok(isStandingStill(player));
+    assert.ok(Math.abs(player.walked - TILE_SIZE) < ROUNDING_TOLERANCE);
   });
 
-  it("is blocked by obstacles", () => {
-    const start = createPlayer(NEXT_TO_TOP_WALL);
-    const player = walk(start, "up", SECOND);
-    assert.ok(player.y < start.y + 1);
-    assert.ok(player.y >= TILE_SIZE - 1);
+  it("finishes a started step after the direction is released", () => {
+    const started = walk(facingRight(), "right", FRAME);
+    assert.ok(!isStandingStill(started));
+    const player = hold(started, null, STEP_MILLISECONDS);
+
+    assert.equal(player.tile.column, OPEN_GROUND.column + 1);
+    assert.ok(isStandingStill(player));
+  });
+
+  it("only ever stops on whole tiles", () => {
+    let player = facingRight();
+    for (let frame = 0; frame < SECOND / FRAME; frame += 1) {
+      player = walk(player, frame < HALF ? "right" : null, FRAME);
+    }
+    const position = playerPosition(player);
+
+    assert.equal(position.x % TILE_SIZE, 0);
+    assert.equal(position.y % TILE_SIZE, 0);
+  });
+
+  it("turns on a short press without stepping", () => {
+    const player = hold(createPlayer(OPEN_GROUND), "left", FRAME);
+
+    assert.equal(player.facing, "left");
+    assert.deepEqual(player.tile, OPEN_GROUND);
+    assert.ok(isStandingStill(player));
+  });
+
+  it("walks after turning when the direction is held", () => {
+    const player = hold(
+      createPlayer(OPEN_GROUND),
+      "left",
+      TURN_MILLISECONDS + STEP_MILLISECONDS * TWICE,
+    );
+
+    assert.ok(player.tile.column < OPEN_GROUND.column);
+  });
+
+  it("changes direction without a pause while walking", () => {
+    const walked = hold(facingRight(), "right", STEP_MILLISECONDS);
+    const player = hold(walked, "down", STEP_MILLISECONDS);
+
+    assert.deepEqual(player.tile, {
+      column: OPEN_GROUND.column + 1,
+      row: OPEN_GROUND.row + 1,
+    });
+  });
+
+  it("is blocked by obstacles but faces them", () => {
+    const start = { ...createPlayer(NEXT_TO_TOP_WALL), facing: "up" as const };
+    const player = hold(start, "up", SECOND);
+
+    assert.deepEqual(player.tile, NEXT_TO_TOP_WALL);
     assert.equal(player.facing, "up");
   });
 
+  it("is blocked by occupied tiles", () => {
+    const player = hold(facingRight(), "right", SECOND);
+    const blocked = walk(facingRight(), "right", SECOND, () => false);
+
+    assert.ok(player.tile.column > OPEN_GROUND.column);
+    assert.deepEqual(blocked.tile, OPEN_GROUND);
+  });
+
+  it("occupies both tiles while stepping", () => {
+    const player = walk(facingRight(), "right", FRAME);
+
+    assert.deepEqual(occupiedTiles(player), [
+      OPEN_GROUND,
+      { column: OPEN_GROUND.column + 1, row: OPEN_GROUND.row },
+    ]);
+    assert.deepEqual(occupiedTiles(facingRight()), [OPEN_GROUND]);
+  });
+
   it("is blocked by world edges", () => {
-    let player = createPlayer(OPEN_GROUND);
-    for (let second = 0; second < SECONDS_TO_CROSS_WORLD; second += 1) {
-      player = walk(player, "left", SECOND);
-    }
-    assert.ok(player.x >= 0);
-    assert.equal(walk(player, "left", SECOND).x, player.x);
+    const player = hold(
+      { ...createPlayer(OPEN_GROUND), facing: "left" },
+      "left",
+      SECONDS_TO_CROSS_WORLD * SECOND,
+    );
+
+    assert.ok(player.tile.column >= 0);
+    assert.ok(isStandingStill(player));
   });
 
   it("gives the same result for touch and keyboard input", () => {
@@ -60,8 +160,8 @@ describe("movement", () => {
     keyboard.keyDown("ArrowDown");
     const start = createPlayer(OPEN_GROUND);
     assert.deepEqual(
-      walk(start, touch.direction(), HALF_SECOND),
-      walk(start, keyboard.direction(), HALF_SECOND),
+      hold(start, touch.direction(), SECOND),
+      hold(start, keyboard.direction(), SECOND),
     );
   });
 });
