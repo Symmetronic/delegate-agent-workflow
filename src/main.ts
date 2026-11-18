@@ -12,7 +12,7 @@ import {
   playerPosition,
   walk,
 } from "#/src/movement.ts";
-import { PALETTE } from "#/src/palette.ts";
+import { UI_PALETTE } from "#/src/palette.ts";
 import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
   bakeSprite,
@@ -21,9 +21,11 @@ import {
   PRINTER_SPRITE,
   SYSADMIN_SPRITE,
   TERMINAL_SPRITE,
+  TILE_PALETTES,
   TILE_SPRITES,
   TOASTER_SPRITE,
   VACUUM_SPRITE,
+  type SpriteRows,
 } from "#/src/sprites.ts";
 import { createStory } from "#/src/story.ts";
 import type { TextPage } from "#/src/text-window.ts";
@@ -53,32 +55,40 @@ if (context === null) {
 canvas.width = LOGICAL_SIZE.width;
 canvas.height = LOGICAL_SIZE.height;
 
+function bakeTile(kind: TileKind): HTMLCanvasElement {
+  return bakeSprite(TILE_SPRITES[kind], TILE_PALETTES[kind]);
+}
+
+function bakePlayer(rows: SpriteRows): HTMLCanvasElement {
+  return bakeSprite(rows, "player");
+}
+
 const tileImages: Record<TileKind, HTMLCanvasElement> = {
-  ground: bakeSprite(TILE_SPRITES.ground),
-  "cable-grass": bakeSprite(TILE_SPRITES["cable-grass"]),
-  obstacle: bakeSprite(TILE_SPRITES.obstacle),
-  "floor-mat": bakeSprite(TILE_SPRITES["floor-mat"]),
+  ground: bakeTile("ground"),
+  "cable-grass": bakeTile("cable-grass"),
+  obstacle: bakeTile("obstacle"),
+  "floor-mat": bakeTile("floor-mat"),
 };
 const playerImages: Record<Direction, readonly HTMLCanvasElement[]> = {
-  down: PLAYER_SPRITES.down.map(bakeSprite),
-  up: PLAYER_SPRITES.up.map(bakeSprite),
-  left: PLAYER_SPRITES.left.map(bakeSprite),
-  right: PLAYER_SPRITES.right.map(bakeSprite),
+  down: PLAYER_SPRITES.down.map(bakePlayer),
+  up: PLAYER_SPRITES.up.map(bakePlayer),
+  left: PLAYER_SPRITES.left.map(bakePlayer),
+  right: PLAYER_SPRITES.right.map(bakePlayer),
 };
 
 const glyphImages = new Map(
   Object.entries(GLYPH_SPRITES).map(([character, rows]) => [
     character,
-    bakeSprite(rows),
+    bakeSprite(rows, "ui"),
   ]),
 );
-const sysadminImage = bakeSprite(SYSADMIN_SPRITE);
-const bubbleImage = bakeSprite(BUBBLE_SPRITE);
-const terminalImage = bakeSprite(TERMINAL_SPRITE);
+const sysadminImage = bakeSprite(SYSADMIN_SPRITE, "sysadmin");
+const bubbleImage = bakeSprite(BUBBLE_SPRITE, "ui");
+const terminalImage = bakeSprite(TERMINAL_SPRITE, "terminal");
 const machineImages: Readonly<Record<MachineKind, HTMLCanvasElement>> = {
-  toaster: bakeSprite(TOASTER_SPRITE),
-  printer: bakeSprite(PRINTER_SPRITE),
-  vacuum: bakeSprite(VACUUM_SPRITE),
+  toaster: bakeSprite(TOASTER_SPRITE, "toaster"),
+  printer: bakeSprite(PRINTER_SPRITE, "printer"),
+  vacuum: bakeSprite(VACUUM_SPRITE, "vacuum"),
 };
 
 const BATTLE_DIRECTION_BY_KEY: Readonly<Record<string, Direction>> = {
@@ -228,9 +238,9 @@ function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
   }
   const width = LOGICAL_SIZE.width - WINDOW_MARGIN * BOTH_SIDES;
   const top = LOGICAL_SIZE.height - WINDOW_MARGIN - WINDOW_HEIGHT;
-  context.fillStyle = PALETTE.darkest;
+  context.fillStyle = UI_PALETTE.darkest;
   context.fillRect(WINDOW_MARGIN, top, width, WINDOW_HEIGHT);
-  context.fillStyle = PALETTE.lightest;
+  context.fillStyle = UI_PALETTE.lightest;
   context.fillRect(
     WINDOW_MARGIN + 1,
     top + 1,
@@ -245,7 +255,7 @@ function drawTextWindow(page: TextPage | null, hasMore: boolean): void {
     );
   });
   if (hasMore) {
-    context.fillStyle = PALETTE.darkest;
+    context.fillStyle = UI_PALETTE.darkest;
     context.fillRect(
       WINDOW_MARGIN + width - WINDOW_PADDING - MORE_MARKER_SIZE,
       top + WINDOW_HEIGHT - WINDOW_PADDING - MORE_MARKER_SIZE,
@@ -260,7 +270,7 @@ function draw(timestamp: number): void {
     return;
   }
   const camera = cameraOrigin();
-  context.fillStyle = PALETTE.lightest;
+  context.fillStyle = UI_PALETTE.lightest;
   context.fillRect(0, 0, LOGICAL_SIZE.width, LOGICAL_SIZE.height);
   const firstColumn = Math.floor(camera.x / TILE_SIZE);
   const lastColumn = Math.ceil((camera.x + LOGICAL_SIZE.width) / TILE_SIZE);
@@ -314,11 +324,11 @@ function drawBar(x: number, y: number, current: number, max: number): void {
   if (context === null) {
     return;
   }
-  context.fillStyle = PALETTE.darkest;
+  context.fillStyle = UI_PALETTE.darkest;
   context.fillRect(x, y, BAR_WIDTH + BOTH_SIDES, BAR_HEIGHT);
-  context.fillStyle = PALETTE.lightest;
+  context.fillStyle = UI_PALETTE.lightest;
   context.fillRect(x + 1, y + 1, BAR_WIDTH, BAR_HEIGHT - BOTH_SIDES);
-  context.fillStyle = PALETTE.dark;
+  context.fillStyle = UI_PALETTE.dark;
   context.fillRect(
     x + 1,
     y + 1,
@@ -331,7 +341,7 @@ function drawBattle(active: Battle): void {
   if (context === null) {
     return;
   }
-  context.fillStyle = PALETTE.lightest;
+  context.fillStyle = UI_PALETTE.lightest;
   context.fillRect(0, 0, LOGICAL_SIZE.width, LOGICAL_SIZE.height);
   drawText(active.machineName(), MACHINE_LABEL.x, MACHINE_LABEL.y);
   drawBar(
@@ -358,10 +368,10 @@ function drawBattle(active: Battle): void {
   }
   const names = active.attackNames();
   ATTACK_CELLS.forEach((cell, index) => {
-    context.fillStyle = PALETTE.darkest;
+    context.fillStyle = UI_PALETTE.darkest;
     context.fillRect(cell.x, cell.y, cell.width, cell.height);
     context.fillStyle =
-      index === active.selected() ? PALETTE.light : PALETTE.lightest;
+      index === active.selected() ? UI_PALETTE.light : UI_PALETTE.lightest;
     context.fillRect(
       cell.x + CELL_BORDER,
       cell.y + CELL_BORDER,

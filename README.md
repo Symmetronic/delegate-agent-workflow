@@ -8,7 +8,7 @@ See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding sta
 
 ## Artificial Unintelligence
 
-A Game Boy style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
+A Game Boy Color style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
 
 ### What it is
 

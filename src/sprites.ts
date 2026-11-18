@@ -1,8 +1,15 @@
-import { PALETTE_COLORS } from "#/src/palette.ts";
+import { PALETTES, type PaletteName } from "#/src/palette.ts";
 import type { Direction } from "#/src/walk-input.ts";
 import type { TileKind } from "#/src/world.ts";
 
 export type SpriteRows = readonly string[];
+
+export const TILE_PALETTES: Readonly<Record<TileKind, PaletteName>> = {
+  ground: "earth",
+  "cable-grass": "grass",
+  obstacle: "rock",
+  "floor-mat": "mat",
+};
 
 export const TILE_SPRITES: Readonly<Record<TileKind, SpriteRows>> = {
   ground: [
@@ -100,7 +107,11 @@ export const PLAYER_SPRITES: Readonly<
   right: playerFrames(PLAYER_LEFT_BODY).map(mirror),
 };
 
-export function bakeSprite(rows: SpriteRows): HTMLCanvasElement {
+export function bakeSprite(
+  rows: SpriteRows,
+  paletteName: PaletteName,
+): HTMLCanvasElement {
+  const palette = PALETTES[paletteName];
   const canvas = document.createElement("canvas");
   canvas.width = rows[0]?.length ?? 0;
   canvas.height = rows.length;
@@ -110,7 +121,7 @@ export function bakeSprite(rows: SpriteRows): HTMLCanvasElement {
   }
   rows.forEach((row, y) => {
     row.split("").forEach((symbol, x) => {
-      const color = PALETTE_COLORS[Number(symbol)];
+      const color = palette[Number(symbol)];
       if (color !== undefined) {
         context.fillStyle = color;
         context.fillRect(x, y, 1, 1);
