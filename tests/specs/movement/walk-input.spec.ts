@@ -73,4 +73,15 @@ describe("walk input", () => {
     input.keyUp("a");
     assert.equal(input.direction(), null);
   });
+
+  it("stops when a letter key is released with Shift or Caps Lock", () => {
+    const input = createWalkInput();
+    input.keyDown("d");
+    input.keyUp("D");
+    assert.equal(input.direction(), null);
+    input.keyDown("W");
+    assert.equal(input.direction(), "up");
+    input.keyUp("w");
+    assert.equal(input.direction(), null);
+  });
 });

@@ -32,6 +32,10 @@ export interface WalkInput {
   direction(): Direction | null;
 }
 
+function directionOfKey(key: string): Direction | undefined {
+  return DIRECTION_BY_KEY[key.length === 1 ? key.toLowerCase() : key];
+}
+
 function snapToDirection(origin: Point, current: Point): Direction {
   const deltaX = current.x - origin.x;
   const deltaY = current.y - origin.y;
@@ -71,13 +75,13 @@ export function createWalkInput(): WalkInput {
       return outcome;
     },
     keyDown(key) {
-      const direction = DIRECTION_BY_KEY[key];
+      const direction = directionOfKey(key);
       if (direction !== undefined && !heldDirections.includes(direction)) {
         heldDirections = [...heldDirections, direction];
       }
     },
     keyUp(key) {
-      const direction = DIRECTION_BY_KEY[key];
+      const direction = directionOfKey(key);
       heldDirections = heldDirections.filter((held) => held !== direction);
     },
     direction() {
