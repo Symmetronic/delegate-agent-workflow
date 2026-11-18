@@ -6,6 +6,22 @@ An agent workflow for delegating multiple tasks to agents in parallel and superv
 
 See [CODING_STANDARDS.md](CODING_STANDARDS.md) for the principles and coding standards that apply to this repository.
 
+## Artificial Unintelligence
+
+A Game Boy style top-down game prototype for phones, rendered with Canvas 2D at a logical resolution of 160×144. The screen is scaled by an integer factor in device pixels, centered with a letterbox and follows orientation changes without reload.
+
+### Build
+
+`npm run build` bundles `src/main.ts` with `esbuild` and writes `dist/index.html` and `dist/game.js`.
+
+### Develop
+
+Run `npm run build`, then serve `dist/` with any static file server, e.g. `npx esbuild --servedir=dist --serve=8000`, and open `http://localhost:8000`. Rebuild after each change.
+
+### Deploy
+
+Deploy exactly the two files in `dist/`: `index.html` and `game.js`.
+
 ## Delegate runs
 
 `/delegate <idea>` in Claude Code turns an idea into a pull request:

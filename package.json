@@ -15,7 +15,7 @@
   "scripts": {
     "audit:check": "npm audit --audit-level=moderate",
     "audit:fix": "npm audit fix",
-    "build": "true",
+    "build": "node scripts/build.ts",
     "check": "npm run format:check && npm run type:check && npm run lint:check && npm run license:check",
     "fix": "npm run lint:fix; npm run format:fix",
     "format:check": "prettier --check .",
@@ -36,6 +36,7 @@
     "@tsconfig/strictest": "2.0.8",
     "@types/node": "26.6.6",
     "chrome-devtools-mcp": "1.13.0",
+    "esbuild": "0.28.2",
     "eslint": "10.14.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-import-resolver-typescript": "4.4.5",

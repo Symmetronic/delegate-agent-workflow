@@ -2,7 +2,7 @@
 
 A playable prototype of a Game Boy style top-down game in which humanity faces artificial intelligence, played for laughs rather than doom: the machines have taken over but are stuck in a meaning crisis, and the only human weapon left is the uncomfortable question. The point of the prototype is to find out how well this plays on a phone, so touch control, both orientations and a pixelated look matter more than content volume. It ships as exactly two deploy artifacts, one HTML file and one JavaScript file, built with `esbuild` as the only added dependency; rendering is Canvas 2D at a logical resolution of 160×144, integer-scaled with a letterbox, and all graphics are pixel-row strings in code with a four-color palette, so there are no asset files. Game logic — battle resolution with injectable randomness, encounter triggers, movement and collision, dialog state — lives in modules tested through their public interface with `node:test`; renderer, input and audio stay thin adapters verified by hand in the browser. All game text is English, there is no i18n layer, no saving, no leveling and no items.
 
-## [ ] 1. Scale a pixel screen to any phone
+## [x] 1. Scale a pixel screen to any phone
 
 **Blocked by:** None
 
