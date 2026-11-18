@@ -149,11 +149,11 @@ implement_task() {
 4. Commit everything as exactly one Conventional Commit with a capitalized summary.
 
 Never push. Never change other tasks in $TASKS_FILE_IN_REPOSITORY. Finish with a clean working tree."
+  push_branch
   require_clean_working_tree
   require_one_commit_since "$task_number" "$task_base_commit"
   require_task_ticked "$task_number"
   verify_every_commit_since "$task_base_commit"
-  push_branch
 }
 
 implement_tasks() {
