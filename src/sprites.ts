@@ -20,6 +20,10 @@ export const TILE_PALETTES: Readonly<
   debris: ["scrap"],
   wreck: ["earth"],
   "floor-mat": ["mat"],
+  floor: ["floor"],
+  "server-rack": ["rack"],
+  water: ["water", "water-dim"],
+  "overgrown-floor": ["moss"],
 };
 
 const GRASS_ROOTS: SpriteRows = ["12012012", "21021021", "02102102"];
@@ -156,6 +160,37 @@ export const TILE_SPRITES: Readonly<Record<TileKind, SpriteRows>> = {
     "02222220",
     "00000000",
   ],
+  floor: [
+    "00000002",
+    "00000002",
+    "00100002",
+    "00000002",
+    "00000102",
+    "00000002",
+    "00000002",
+    "22222222",
+  ],
+  "server-rack": [
+    "33333333",
+    "32222223",
+    "32131323",
+    "32222223",
+    "32313123",
+    "32222223",
+    "32131323",
+    "33333333",
+  ],
+  water: [
+    "22222222",
+    "22122222",
+    "21212222",
+    "22222212",
+    "22222121",
+    "22222222",
+    "22122222",
+    "22222222",
+  ],
+  "overgrown-floor": GRASS_STILL,
 };
 
 export const PROP_PALETTES: Readonly<Record<PropKind, PaletteName>> = {
@@ -332,6 +367,17 @@ export const BUBBLE_SPRITE: SpriteRows = [
   "3003003",
   "3333333",
   "..3....",
+];
+
+export const SIGN_SPRITE: SpriteRows = [
+  "33333333",
+  "31111113",
+  "31333313",
+  "31111113",
+  "31333113",
+  "33333333",
+  "...33...",
+  "...33...",
 ];
 
 export const TERMINAL_SPRITE: SpriteRows = [

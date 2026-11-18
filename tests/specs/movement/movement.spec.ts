@@ -18,8 +18,8 @@ const FRAME = 16;
 const TWICE = 2;
 const HALF = 2;
 const STEP_MILLISECONDS = (TILE_SIZE * SECOND) / WALK_SPEED;
-const OPEN_GROUND = { column: 20, row: 14 };
-const NEXT_TO_TOP_WALL = { column: 10, row: 1 };
+const OPEN_GROUND = { column: 20, row: 32 };
+const NEXT_TO_TOP_WALL = { column: 10, row: 19 };
 const SECONDS_TO_CROSS_WORLD = 20;
 const ROUNDING_TOLERANCE = 1e-6;
 

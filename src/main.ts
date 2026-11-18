@@ -33,6 +33,7 @@ import {
   PRINTER_SPRITE,
   PROP_PALETTES,
   PROP_SPRITES,
+  SIGN_SPRITE,
   SYSADMIN_SPRITE,
   TERMINAL_SPRITE,
   TILE_PALETTES,
@@ -49,6 +50,7 @@ import {
   isSameTile,
   PLAYER_START,
   PROPS,
+  SIGN_TILE,
   SYSADMIN_TILE,
   TERMINAL_TILES,
   TILE_SIZE,
@@ -92,12 +94,21 @@ function tileImages(kind: TileKind): readonly HTMLCanvasElement[] {
   tileImageCache.set(kind, baked);
   return baked;
 }
-const grassImages: Readonly<Record<GrassFrame, HTMLCanvasElement>> = {
-  still: bakeSprite(GRASS_SPRITES.still, "grass"),
-  leaning: bakeSprite(GRASS_SPRITES.leaning, "grass"),
-  rustling: bakeSprite(GRASS_SPRITES.rustling, "grass"),
-  settling: bakeSprite(GRASS_SPRITES.settling, "grass"),
-};
+function bakeGrass(
+  kind: TileKind,
+): Readonly<Record<GrassFrame, HTMLCanvasElement>> {
+  const [palette] = TILE_PALETTES[kind];
+  return {
+    still: bakeSprite(GRASS_SPRITES.still, palette),
+    leaning: bakeSprite(GRASS_SPRITES.leaning, palette),
+    rustling: bakeSprite(GRASS_SPRITES.rustling, palette),
+    settling: bakeSprite(GRASS_SPRITES.settling, palette),
+  };
+}
+const grassImages = {
+  "cable-grass": bakeGrass("cable-grass"),
+  "overgrown-floor": bakeGrass("overgrown-floor"),
+} as const;
 function bakeCreature(
   kind: CreatureKind,
 ): Readonly<Record<"right" | "left", HTMLCanvasElement>> {
@@ -136,6 +147,7 @@ const glyphImages = new Map(
 const sysadminImage = bakeSprite(SYSADMIN_SPRITE, "sysadmin");
 const bubbleImage = bakeSprite(BUBBLE_SPRITE, "ui");
 const terminalImage = bakeSprite(TERMINAL_SPRITE, "terminal");
+const signImage = bakeSprite(SIGN_SPRITE, "sign");
 const machineImages: Readonly<Record<MachineKind, HTMLCanvasElement>> = {
   toaster: bakeSprite(TOASTER_SPRITE, "toaster"),
   printer: bakeSprite(PRINTER_SPRITE, "printer"),
@@ -211,6 +223,12 @@ const FIXED_INTERACTABLES: readonly Interactable[] = [
     footprint: [SYSADMIN_TILE],
     interact: () => {
       story.talkToSysadmin();
+    },
+  },
+  {
+    footprint: [SIGN_TILE],
+    interact: () => {
+      story.readSign();
     },
   },
   ...TERMINAL_TILES.map((tile, index) => ({
@@ -357,8 +375,8 @@ function tileImage(
   timestamp: number,
 ): HTMLCanvasElement | undefined {
   const kind = tileAt(tile.column, tile.row);
-  if (isCableGrass(kind)) {
-    return grassImages[grass.frame(tile, timestamp)];
+  if (kind === "cable-grass" || kind === "overgrown-floor") {
+    return grassImages[kind][grass.frame(tile, timestamp)];
   }
   const frames = tileImages(kind);
   return frames[Math.floor(timestamp / GLOW_MILLISECONDS) % frames.length];
@@ -420,6 +438,11 @@ function draw(timestamp: number): void {
     sysadminImage,
     SYSADMIN_POSITION.x - camera.x,
     SYSADMIN_POSITION.y - camera.y,
+  );
+  context.drawImage(
+    signImage,
+    SIGN_TILE.column * TILE_SIZE - camera.x,
+    SIGN_TILE.row * TILE_SIZE - camera.y,
   );
   for (const creature of creatures) {
     const position = positionOf(creature);

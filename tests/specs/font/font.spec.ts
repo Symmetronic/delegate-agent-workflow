@@ -4,6 +4,7 @@ import { GLYPH_SPRITES } from "#/src/font.ts";
 import { MACHINES } from "#/src/machines.ts";
 import {
   CREATURE_REMARKS,
+  SIGN_TEXT,
   SYSADMIN_WINDOWS,
   sysadminReminder,
   ULTIMATE_REMINDER,
@@ -26,6 +27,7 @@ describe("font", () => {
       ...ULTIMATE_TRADE_WINDOWS,
       sysadminReminder(0),
       ULTIMATE_REMINDER,
+      SIGN_TEXT,
       ...TERMINAL_CONFESSIONS,
       ...Object.values(CREATURE_REMARKS),
       ...[...ATTACKS, ULTIMATE_ATTACK].flatMap((attack) => [

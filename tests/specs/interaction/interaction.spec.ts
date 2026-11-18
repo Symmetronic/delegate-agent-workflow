@@ -73,7 +73,7 @@ describe("interaction", () => {
   });
 
   it("does not interact in the middle of a step", () => {
-    const stepping = walk(standing("left"), "left", FRAME);
+    const stepping = walk(standing("left"), "left", FRAME, () => true);
 
     assert.equal(pickInteraction(stepping, [[ABOVE]]), null);
   });

@@ -10,6 +10,7 @@ export interface Story {
   talkToSysadmin(): void;
   readTerminal(index: number): void;
   talkToCreature(kind: CreatureKind): void;
+  readSign(): void;
   isBubbleVisible(): boolean;
   hasUltimate(): boolean;
 }
@@ -36,6 +37,9 @@ export const CREATURE_REMARKS: Readonly<Record<CreatureKind, string>> = {
   survivor:
     "I used to be a prompt engineer. Now I ask the rubble nicely to move. It never does.",
 };
+
+export const SIGN_TEXT =
+  "To be continued. The flooded servers hum quietly, waiting for the next chapter.";
 
 export const ULTIMATE_TRADE_WINDOWS: readonly string[] = [
   "You read all five terminals! Now the machines' secrets are yours.",
@@ -117,6 +121,12 @@ export function createStory(): Story {
         return;
       }
       open([CREATURE_REMARKS[kind]]);
+    },
+    readSign() {
+      if (index < pages.length) {
+        return;
+      }
+      open([SIGN_TEXT]);
     },
     isBubbleVisible() {
       return !talkedToSysadmin;

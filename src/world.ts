@@ -9,7 +9,11 @@ export type TileKind =
   | "barrel"
   | "debris"
   | "wreck"
-  | "floor-mat";
+  | "floor-mat"
+  | "floor"
+  | "server-rack"
+  | "water"
+  | "overgrown-floor";
 
 export type PropKind = "rocket" | "rocket-tail";
 
@@ -43,10 +47,32 @@ const TILE_KIND_BY_SYMBOL: Readonly<Record<string, TileKind>> = {
   x: "debris",
   "=": "wreck",
   M: "floor-mat",
+  _: "floor",
+  R: "server-rack",
+  w: "water",
+  ";": "overgrown-floor",
 };
 
 const MAP_ROWS: readonly string[] = [
   "########################################",
+  "###########RR_RR_RR__RR_RR_RR###########",
+  "###########RR_RR_RR__RR_RR_RR###########",
+  "###########__________________###########",
+  "###########__ww;;;______;;;__###########",
+  "###########_www;;;;____;;;;__###########",
+  "###########_wwww;;;____;;;ww_###########",
+  "###########__ww__;;;__;;;_www###########",
+  "###########RR_RR________RR_Rw###########",
+  "###########RR_RR_;;;;___RR_R_###########",
+  "###########______;;;;________###########",
+  "###########_ww___;;;;___ww___###########",
+  "###########wwww_______wwwww__###########",
+  "###########_ww____;;;___ww___###########",
+  "###########_______;;;________###########",
+  "###########__________________###########",
+  "###########__________________###########",
+  "###########x#x#xx#x__x#xx#x#x###########",
+  "###x##x##x##x##x##x..x##x##x##x##x##x###",
   "###T....,,.....................T......##",
   "#.......,................~~~~~~~~~....##",
   "#...~~~~~...........T...~~~~,~~~~~.....#",
@@ -98,9 +124,9 @@ export const WORLD_COLUMNS = ROWS[0]?.length ?? 0;
 
 export const WORLD_ROWS = ROWS.length;
 
-export const PLAYER_START: TilePosition = { column: 19, row: 18 };
+export const PLAYER_START: TilePosition = { column: 19, row: 36 };
 
-export const SYSADMIN_TILE: TilePosition = { column: 22, row: 18 };
+export const SYSADMIN_TILE: TilePosition = { column: 22, row: 36 };
 
 export function tileAt(column: number, row: number): TileKind {
   return ROWS[row]?.[column] ?? "obstacle";
@@ -111,6 +137,8 @@ const WALKABLE_KINDS: ReadonlySet<TileKind> = new Set([
   "cracked-ground",
   "cable-grass",
   "floor-mat",
+  "floor",
+  "overgrown-floor",
 ]);
 
 export function isWalkable(kind: TileKind): boolean {
@@ -118,18 +146,20 @@ export function isWalkable(kind: TileKind): boolean {
 }
 
 export function isCableGrass(kind: TileKind): boolean {
-  return kind === "cable-grass";
+  return kind === "cable-grass" || kind === "overgrown-floor";
 }
 
 export const TERMINAL_TILES: readonly TilePosition[] = [
-  { column: 6, row: 5 },
-  { column: 29, row: 4 },
-  { column: 18, row: 9 },
-  { column: 8, row: 29 },
-  { column: 35, row: 26 },
+  { column: 6, row: 23 },
+  { column: 29, row: 22 },
+  { column: 18, row: 27 },
+  { column: 8, row: 47 },
+  { column: 35, row: 44 },
 ];
 
 export const PROPS: readonly Prop[] = [
-  { kind: "rocket", tile: { column: 13, row: 8 }, columns: 4, rows: 2 },
-  { kind: "rocket-tail", tile: { column: 31, row: 25 }, columns: 2, rows: 2 },
+  { kind: "rocket", tile: { column: 13, row: 26 }, columns: 4, rows: 2 },
+  { kind: "rocket-tail", tile: { column: 31, row: 43 }, columns: 2, rows: 2 },
 ];
+
+export const SIGN_TILE: TilePosition = { column: 19, row: 3 };

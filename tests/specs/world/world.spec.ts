@@ -4,6 +4,7 @@ import {
   isWalkable,
   PLAYER_START,
   PROPS,
+  SIGN_TILE,
   SYSADMIN_TILE,
   TERMINAL_TILES,
   TILE_SIZE,
@@ -17,10 +18,12 @@ import { describe, it } from "node:test";
 
 const SCREEN_COLUMNS = 20;
 const SCREEN_ROWS = 18;
-const SCREENS_PER_SIDE = 2;
+const SCREENS_WIDE = 2;
+const SCREENS_TALL = 3;
 const TILE_PIXELS = 8;
-const GRASS_TILE = { column: 5, row: 5 };
-const MAT_TILE = { column: 21, row: 18 };
+const GRASS_TILE = { column: 5, row: 23 };
+const OVERGROWN_TILE = { column: 18, row: 10 };
+const MAT_TILE = { column: 21, row: 36 };
 const OUTSIDE = 5;
 const NEAR_START_TILES = 4;
 
@@ -61,7 +64,7 @@ function neighborsOf(tile: TilePosition): TilePosition[] {
 }
 
 function reachableFromStart(): Set<string> {
-  const occupied = [SYSADMIN_TILE, ...TERMINAL_TILES];
+  const occupied = [SYSADMIN_TILE, SIGN_TILE, ...TERMINAL_TILES];
   const reachable = new Set([keyOf(PLAYER_START)]);
   const queue = [PLAYER_START];
   for (let tile = queue.shift(); tile !== undefined; tile = queue.shift()) {
@@ -80,13 +83,13 @@ function reachableFromStart(): Set<string> {
 }
 
 describe("world", () => {
-  it("spans two by two screens", () => {
-    assert.equal(WORLD_COLUMNS, SCREEN_COLUMNS * SCREENS_PER_SIDE);
-    assert.equal(WORLD_ROWS, SCREEN_ROWS * SCREENS_PER_SIDE);
+  it("spans two screens wide and three screens tall", () => {
+    assert.equal(WORLD_COLUMNS, SCREEN_COLUMNS * SCREENS_WIDE);
+    assert.equal(WORLD_ROWS, SCREEN_ROWS * SCREENS_TALL);
     assert.equal(TILE_SIZE, TILE_PIXELS);
   });
 
-  it("shows the aftermath of the disaster", () => {
+  it("shows the aftermath of the disaster and a flooded data center", () => {
     assert.deepEqual([...allKinds()].sort(), [
       "barrel",
       "cable-grass",
@@ -94,10 +97,14 @@ describe("world", () => {
       "crater",
       "dead-tree",
       "debris",
+      "floor",
       "floor-mat",
       "ground",
       "obstacle",
+      "overgrown-floor",
+      "server-rack",
       "toxic-pool",
+      "water",
       "wreck",
     ]);
   });
@@ -119,11 +126,11 @@ describe("world", () => {
     );
   });
 
-  it("lets the player reach the sysadmin and every terminal", () => {
+  it("lets the player reach the sysadmin, every terminal and the sign", () => {
     const reachable = reachableFromStart();
 
     assert.ok(
-      [SYSADMIN_TILE, ...TERMINAL_TILES].every((target) =>
+      [SYSADMIN_TILE, SIGN_TILE, ...TERMINAL_TILES].every((target) =>
         neighborsOf(target).some((tile) => reachable.has(keyOf(tile))),
       ),
     );
@@ -146,6 +153,7 @@ describe("world", () => {
     assert.ok(isCableGrass(tileAt(GRASS_TILE.column, GRASS_TILE.row)));
     assert.ok(isWalkable(tileAt(GRASS_TILE.column, GRASS_TILE.row)));
     assert.ok(!isCableGrass(tileAt(MAT_TILE.column, MAT_TILE.row)));
+    assert.ok(isCableGrass(tileAt(OVERGROWN_TILE.column, OVERGROWN_TILE.row)));
   });
 
   it("places the sysadmin on his floor mat next to the start", () => {

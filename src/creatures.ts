@@ -23,9 +23,9 @@ export const CREATURE_HOMES: readonly {
   readonly kind: CreatureKind;
   readonly home: TilePosition;
 }[] = [
-  { kind: "crow", home: { column: 22, row: 11 } },
-  { kind: "rat", home: { column: 9, row: 21 } },
-  { kind: "survivor", home: { column: 25, row: 27 } },
+  { kind: "crow", home: { column: 22, row: 29 } },
+  { kind: "rat", home: { column: 9, row: 39 } },
+  { kind: "survivor", home: { column: 25, row: 45 } },
 ];
 
 function randomPause(random: Random): number {
