@@ -1,3 +1,4 @@
+import type { CreatureKind } from "#/src/creatures.ts";
 import type { GrassFrame } from "#/src/grass.ts";
 import { PALETTES, type PaletteName } from "#/src/palette.ts";
 import type { Direction } from "#/src/walk-input.ts";
@@ -237,7 +238,7 @@ function withLegs(body: SpriteRows, legs: SpriteRows): SpriteRows {
   return [...body, ...legs];
 }
 
-function mirror(rows: SpriteRows): SpriteRows {
+export function mirror(rows: SpriteRows): SpriteRows {
   return rows.map((row) => row.split("").reverse().join(""));
 }
 
@@ -277,6 +278,39 @@ export function bakeSprite(
   });
   return canvas;
 }
+
+export const CREATURE_SPRITES: Readonly<Record<CreatureKind, SpriteRows>> = {
+  crow: [
+    "...333..",
+    "..31313.",
+    "..331322",
+    ".303333.",
+    "30033333",
+    ".333330.",
+    "...33...",
+    "...2.2..",
+  ],
+  rat: [
+    "........",
+    "........",
+    "....33..",
+    "..330233",
+    ".3202213",
+    "32222220",
+    "3.3333..",
+    "1..3.3..",
+  ],
+  survivor: [
+    "..1111..",
+    "11111111",
+    ".300003.",
+    ".303303.",
+    "..2222..",
+    ".222222.",
+    "2.2222.2",
+    "..3..3..",
+  ],
+};
 
 export const SYSADMIN_SPRITE: SpriteRows = [
   "..3333..",

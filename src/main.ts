@@ -2,6 +2,13 @@ import { createAudio } from "#/src/audio.ts";
 import { ATTACK_CELLS, attackAt, attackLabel } from "#/src/battle-layout.ts";
 import { createBattle, type Battle } from "#/src/battle.ts";
 import { computeCameraOrigin, type Point } from "#/src/camera.ts";
+import {
+  createCreature,
+  CREATURE_HOMES,
+  wander,
+  type Creature,
+  type CreatureKind,
+} from "#/src/creatures.ts";
 import { createEncounterTrigger } from "#/src/encounter.ts";
 import { GLYPH_ADVANCE, GLYPH_SPRITES, LINE_HEIGHT } from "#/src/font.ts";
 import { createGrass, type GrassFrame } from "#/src/grass.ts";
@@ -11,7 +18,7 @@ import {
   createPlayer,
   isWalkableTile,
   occupiedTiles,
-  playerPosition,
+  positionOf,
   walk,
 } from "#/src/movement.ts";
 import { UI_PALETTE } from "#/src/palette.ts";
@@ -19,7 +26,9 @@ import { computeScreenLayout, LOGICAL_SIZE } from "#/src/screen-layout.ts";
 import {
   bakeSprite,
   BUBBLE_SPRITE,
+  CREATURE_SPRITES,
   GRASS_SPRITES,
+  mirror,
   PLAYER_SPRITES,
   PRINTER_SPRITE,
   PROP_PALETTES,
@@ -88,6 +97,21 @@ const grassImages: Readonly<Record<GrassFrame, HTMLCanvasElement>> = {
   leaning: bakeSprite(GRASS_SPRITES.leaning, "grass"),
   rustling: bakeSprite(GRASS_SPRITES.rustling, "grass"),
   settling: bakeSprite(GRASS_SPRITES.settling, "grass"),
+};
+function bakeCreature(
+  kind: CreatureKind,
+): Readonly<Record<"right" | "left", HTMLCanvasElement>> {
+  return {
+    right: bakeSprite(CREATURE_SPRITES[kind], kind),
+    left: bakeSprite(mirror(CREATURE_SPRITES[kind]), kind),
+  };
+}
+const creatureImages: Readonly<
+  Record<CreatureKind, Readonly<Record<"right" | "left", HTMLCanvasElement>>>
+> = {
+  crow: bakeCreature("crow"),
+  rat: bakeCreature("rat"),
+  survivor: bakeCreature("survivor"),
 };
 const propImages: Readonly<Record<PropKind, HTMLCanvasElement>> = {
   rocket: bakeSprite(PROP_SPRITES.rocket, PROP_PALETTES.rocket),
@@ -173,13 +197,16 @@ let player = createPlayer(PLAYER_START);
 let battle: Battle | null = null;
 let playerHp: number | null = null;
 let lastTile = tileKey();
+let creatures: readonly Creature[] = CREATURE_HOMES.map(({ kind, home }) =>
+  createCreature(kind, home, Math.random),
+);
 
 interface Interactable {
   readonly footprint: Footprint;
   readonly interact: () => void;
 }
 
-const INTERACTABLES: readonly Interactable[] = [
+const FIXED_INTERACTABLES: readonly Interactable[] = [
   {
     footprint: [SYSADMIN_TILE],
     interact: () => {
@@ -194,13 +221,44 @@ const INTERACTABLES: readonly Interactable[] = [
   })),
 ];
 
-function isFree(tile: TilePosition): boolean {
-  return (
-    isWalkableTile(tile) &&
-    !INTERACTABLES.some(({ footprint }) =>
-      footprint.some((occupied) => isSameTile(occupied, tile)),
-    )
+function interactables(): readonly Interactable[] {
+  return [
+    ...FIXED_INTERACTABLES,
+    ...creatures.map((creature) => ({
+      footprint: occupiedTiles(creature),
+      interact: () => {
+        story.talkToCreature(creature.kind);
+      },
+    })),
+  ];
+}
+
+function isOccupied(
+  tile: TilePosition,
+  occupants: readonly Interactable[],
+): boolean {
+  return occupants.some(({ footprint }) =>
+    footprint.some((occupied) => isSameTile(occupied, tile)),
   );
+}
+
+function isFree(tile: TilePosition): boolean {
+  return isWalkableTile(tile) && !isOccupied(tile, interactables());
+}
+
+function isFreeForCreatures(tile: TilePosition): boolean {
+  return (
+    isFree(tile) &&
+    !occupiedTiles(player).some((occupied) => isSameTile(occupied, tile))
+  );
+}
+
+function moveCreatures(elapsed: number, now: number): void {
+  creatures.forEach((creature, index) => {
+    const moved = wander(creature, elapsed, Math.random, isFreeForCreatures);
+    creatures = creatures.with(index, moved);
+    rustleEnteredGrass(occupiedTiles(creature), occupiedTiles(moved), now);
+  });
 }
 
 function tileKey(): string {
@@ -236,7 +294,7 @@ function endBattleWhenFinished(): void {
 }
 
 function cameraOrigin(): Point {
-  const position = playerPosition(player);
+  const position = positionOf(player);
   return computeCameraOrigin(
     {
       x: position.x + TILE_CENTER_OFFSET,
@@ -308,9 +366,10 @@ function tileImage(
 
 function rustleEnteredGrass(
   before: readonly TilePosition[],
+  after: readonly TilePosition[],
   now: number,
 ): void {
-  for (const tile of occupiedTiles(player)) {
+  for (const tile of after) {
     if (
       isCableGrass(tileAt(tile.column, tile.row)) &&
       !before.some((previous) => isSameTile(previous, tile))
@@ -362,6 +421,16 @@ function draw(timestamp: number): void {
     SYSADMIN_POSITION.x - camera.x,
     SYSADMIN_POSITION.y - camera.y,
   );
+  for (const creature of creatures) {
+    const position = positionOf(creature);
+    context.drawImage(
+      creatureImages[creature.kind][
+        creature.facing === "left" ? "left" : "right"
+      ],
+      Math.round(position.x) - camera.x,
+      Math.round(position.y) - camera.y,
+    );
+  }
   if (story.isBubbleVisible()) {
     const bob =
       Math.floor(timestamp / BUBBLE_BOB_MILLISECONDS) % BUBBLE_BOB_FRAMES;
@@ -375,7 +444,7 @@ function draw(timestamp: number): void {
   const frame =
     frames[Math.floor(player.walked / PIXELS_PER_WALK_FRAME) % frames.length];
   if (frame !== undefined) {
-    const position = playerPosition(player);
+    const position = positionOf(player);
     context.drawImage(
       frame,
       Math.round(position.x) - camera.x,
@@ -469,7 +538,10 @@ function tick(timestamp: number): void {
     if (Math.floor(player.walked / PIXELS_PER_WALK_FRAME) !== stepBefore) {
       audio.play("footstep");
     }
-    rustleEnteredGrass(tilesBefore, timestamp);
+    rustleEnteredGrass(tilesBefore, occupiedTiles(player), timestamp);
+    if (!story.isOpen()) {
+      moveCreatures(elapsed, timestamp);
+    }
     startBattleOnEncounter();
   }
   if (battle === null) {
@@ -510,16 +582,17 @@ function toWorld(point: Point): Point | undefined {
 }
 
 function interact(tap?: Point): void {
+  const targets = interactables();
   const interaction = pickInteraction(
     player,
-    INTERACTABLES.map(({ footprint }) => footprint),
+    targets.map(({ footprint }) => footprint),
     tap,
   );
   if (interaction === null) {
     return;
   }
   player = { ...player, facing: interaction.facing };
-  INTERACTABLES[interaction.target]?.interact();
+  targets[interaction.target]?.interact();
 }
 
 function chooseWithSound(active: Battle, choose: () => void): void {

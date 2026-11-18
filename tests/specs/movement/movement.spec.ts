@@ -2,7 +2,7 @@ import {
   createPlayer,
   isStandingStill,
   occupiedTiles,
-  playerPosition,
+  positionOf,
   TURN_MILLISECONDS,
   walk,
   WALK_SPEED,
@@ -45,7 +45,7 @@ describe("movement", () => {
 
     assert.deepEqual(player.tile, PLAYER_START);
     assert.equal(player.facing, "down");
-    assert.deepEqual(playerPosition(player), {
+    assert.deepEqual(positionOf(player), {
       x: PLAYER_START.column * TILE_SIZE,
       y: PLAYER_START.row * TILE_SIZE,
     });
@@ -81,7 +81,7 @@ describe("movement", () => {
     for (let frame = 0; frame < SECOND / FRAME; frame += 1) {
       player = walk(player, frame < HALF ? "right" : null, FRAME);
     }
-    const position = playerPosition(player);
+    const position = positionOf(player);
 
     assert.equal(position.x % TILE_SIZE, 0);
     assert.equal(position.y % TILE_SIZE, 0);

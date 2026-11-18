@@ -1,3 +1,4 @@
+import type { CreatureKind } from "#/src/creatures.ts";
 import { createTerminals, TOTAL_TERMINALS } from "#/src/terminals.ts";
 import { paginate, type TextPage } from "#/src/text-window.ts";
 
@@ -8,6 +9,7 @@ export interface Story {
   advance(): void;
   talkToSysadmin(): void;
   readTerminal(index: number): void;
+  talkToCreature(kind: CreatureKind): void;
   isBubbleVisible(): boolean;
   hasUltimate(): boolean;
 }
@@ -26,6 +28,13 @@ export const SYSADMIN_WINDOWS: readonly string[] = [
 export function sysadminReminder(read: number): string {
   return `Cable grass, awkward questions. Terminals read: ${String(read)} of ${String(TOTAL_TERMINALS)}.`;
 }
+
+export const CREATURE_REMARKS: Readonly<Record<CreatureKind, string>> = {
+  crow: "Caw. The crow blinks with all three eyes, one after another. It clearly knows something you do not.",
+  rat: "Squeak! The glowing rat sniffs your shoe, decides you are not cheese and looks very disappointed.",
+  survivor:
+    "I used to be a prompt engineer. Now I ask the rubble nicely to move. It never does.",
+};
 
 export const ULTIMATE_TRADE_WINDOWS: readonly string[] = [
   "You read all five terminals! Now the machines' secrets are yours.",
@@ -94,6 +103,12 @@ export function createStory(): Story {
       } else if (reading.status === "already-read") {
         open([`Terminal ${String(reading.number)} is already read.`]);
       }
+    },
+    talkToCreature(kind) {
+      if (index < pages.length) {
+        return;
+      }
+      open([CREATURE_REMARKS[kind]]);
     },
     isBubbleVisible() {
       return !talkedToSysadmin;

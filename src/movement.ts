@@ -7,10 +7,13 @@ import {
   type TilePosition,
 } from "#/src/world.ts";
 
-export interface Player {
+export interface Walker {
   readonly tile: TilePosition;
   readonly facing: Direction;
   readonly progress: number;
+}
+
+export interface Player extends Walker {
   readonly walked: number;
   readonly turnRemaining: number;
   readonly stepping: boolean;
@@ -56,22 +59,22 @@ export function createPlayer(start: TilePosition): Player {
   };
 }
 
-export function playerPosition(player: Player): Point {
-  const step = STEP_BY_DIRECTION[player.facing];
+export function positionOf(walker: Walker): Point {
+  const step = STEP_BY_DIRECTION[walker.facing];
   return {
-    x: player.tile.column * TILE_SIZE + step.column * player.progress,
-    y: player.tile.row * TILE_SIZE + step.row * player.progress,
+    x: walker.tile.column * TILE_SIZE + step.column * walker.progress,
+    y: walker.tile.row * TILE_SIZE + step.row * walker.progress,
   };
 }
 
-export function occupiedTiles(player: Player): readonly TilePosition[] {
-  return player.progress > 0
-    ? [player.tile, neighbor(player.tile, player.facing)]
-    : [player.tile];
+export function occupiedTiles(walker: Walker): readonly TilePosition[] {
+  return walker.progress > 0
+    ? [walker.tile, neighbor(walker.tile, walker.facing)]
+    : [walker.tile];
 }
 
-export function isStandingStill(player: Player): boolean {
-  return player.progress === 0;
+export function isStandingStill(walker: Walker): boolean {
+  return walker.progress === 0;
 }
 
 export function walk(
