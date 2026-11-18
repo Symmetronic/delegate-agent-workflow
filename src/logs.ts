@@ -19,7 +19,7 @@ export interface Logs {
 }
 
 export function createLogs(): Logs {
-  const found = new Set<number>();
+  const findNumbers = new Map<number, number>();
 
   return {
     find(index) {
@@ -27,19 +27,20 @@ export function createLogs(): Logs {
       if (confession === undefined) {
         return { status: "unknown" };
       }
-      const number = index + 1;
-      if (found.has(index)) {
-        return { status: "already-found", number };
+      const foundNumber = findNumbers.get(index);
+      if (foundNumber !== undefined) {
+        return { status: "already-found", number: foundNumber };
       }
-      found.add(index);
+      const number = findNumbers.size + 1;
+      findNumbers.set(index, number);
       return {
         status: "found",
         number,
-        text: `Log ${String(found.size)} of ${String(TOTAL_LOGS)}. ${confession}`,
+        text: `Log ${String(number)} of ${String(TOTAL_LOGS)}. ${confession}`,
       };
     },
     foundCount() {
-      return found.size;
+      return findNumbers.size;
     },
   };
 }

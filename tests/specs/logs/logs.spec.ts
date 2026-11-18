@@ -6,6 +6,7 @@ import { describe, it } from "node:test";
 
 const THIRD = 2;
 const FOURTH = 3;
+const SECOND_FIND = 2;
 const ALL_LOGS = 5;
 
 function textOf(finding: LogFinding): string {
@@ -27,10 +28,14 @@ describe("logs", () => {
 
   it("says an already found log is found without counting again", () => {
     const logs = createLogs();
+    logs.find(THIRD);
     logs.find(1);
 
-    assert.deepEqual(logs.find(1), { status: "already-found", number: 2 });
-    assert.equal(logs.foundCount(), 1);
+    assert.deepEqual(logs.find(1), {
+      status: "already-found",
+      number: SECOND_FIND,
+    });
+    assert.equal(logs.foundCount(), SECOND_FIND);
   });
 
   it("ignores unknown logs", () => {
@@ -74,7 +79,7 @@ describe("story logs", () => {
     }
     story.readLog(FOURTH);
 
-    assert.match(story.page()?.join(" ") ?? "", /already found/);
+    assert.equal(story.page()?.join(" "), "Log 1 is already found.");
   });
 
   it("lets the sysadmin report the count", () => {
