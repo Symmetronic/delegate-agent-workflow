@@ -28,4 +28,6 @@ Every commit is checked with `npm run verify` and the branch is pushed after eve
 
 ### Secrets
 
+Your `.env` is copied into the container's workspace, as in the Dev Container, so the code under work sees the same environment, guarded by the same rules that keep Claude from reading it. The two delegate tokens are removed from that copy.
+
 The GitHub token is only used by the pipeline script that runs in the container to clone, push and create the pull request; Claude sessions never receive it. The Claude token is visible to the commands, hooks and MCP servers Claude runs in the container. It can't be hidden from them: `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` needs unprivileged user namespaces, which Docker blocks by default, and it forces the permission mode back to default. Even with the scrub, the `claude` process itself holds the token, readable from `/proc/<pid>/environ`. Revoke it if you suspect a leak.

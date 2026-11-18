@@ -1,12 +1,14 @@
 #!/bin/sh
 # Runs inside the delegate container, started by run.sh.
-# Secrets live only in non-exported shell variables; Claude sessions never receive GH_TOKEN.
+# The delegate tokens live only in non-exported shell variables; Claude sessions never receive GH_TOKEN.
 
 set -eu
 
 readonly WORKSPACE="/workspace"
 readonly MAIN_BRANCH="main"
 readonly TASKS_FILE_IN_REPOSITORY="TASKS.md"
+readonly ENV_FILE_IN_REPOSITORY=".env"
+readonly DELEGATE_TOKEN_LINES="^(GH_TOKEN|CLAUDE_CODE_OAUTH_TOKEN)="
 readonly CODING_STANDARDS_FILE="CODING_STANDARDS.md"
 readonly LARGE_MODEL="opus"
 readonly SMALL_MODEL="sonnet"
@@ -54,6 +56,10 @@ load_secrets() {
   github_token="$(read_secret GH_TOKEN)"
   claude_token="$(read_secret CLAUDE_CODE_OAUTH_TOKEN)"
   readonly github_token claude_token
+}
+
+move_env_file_into_workspace() {
+  (umask 077 && sed -E "/$DELEGATE_TOKEN_LINES/d" "$SECRETS_FILE" >"$ENV_FILE_IN_REPOSITORY")
   rm -f "$SECRETS_FILE"
 }
 
@@ -246,6 +252,7 @@ main() {
 
   start_step "clone repository"
   clone_repository
+  move_env_file_into_workspace
   start_step "install dependencies"
   install_dependencies
   start_step "commit tasks file"
