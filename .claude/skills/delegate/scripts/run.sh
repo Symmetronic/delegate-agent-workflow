@@ -71,9 +71,8 @@ require_delegate_token() {
 }
 
 require_git_identity() {
-  if ! git config user.name >/dev/null || ! git config user.email >/dev/null; then
-    fail "git user.name and user.email must be set"
-  fi
+  git config user.name >/dev/null && git config user.email >/dev/null \
+    || fail "git user.name and user.email must be set"
 }
 
 require_no_container_for_branch() {
@@ -147,7 +146,7 @@ main() {
   (run_delegate) >"$LOG_FILE" 2>&1
   exit_status=$?
   report_outcome
-  return "$exit_status"
+  exit "$exit_status"
 }
 
 main

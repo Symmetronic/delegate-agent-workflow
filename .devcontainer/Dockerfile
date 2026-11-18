@@ -18,7 +18,6 @@ RUN curl -fsSL --output /tmp/gh.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
     chromium \
-    shellcheck \
     /tmp/gh.deb \
   && rm -rf /var/lib/apt/lists/* /tmp/gh.deb
 
