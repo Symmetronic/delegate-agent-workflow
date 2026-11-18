@@ -64,4 +64,4 @@ The GitHub token is only used by the pipeline script that runs in the container 
 
 ### Restarting Canvas
 
-Kill the `agent-canvas` process, for example with `pkill -f agent-canvas`. The supervisor brings it back.
+Kill the `agent-canvas` process with `pkill -f '^node .*agent-canvas'`. The supervisor brings it back. A plain `pkill -f agent-canvas` would also kill the supervisor, whose command line contains `agent-canvas` too, and Canvas would stay down until the container restarts or is attached again.
